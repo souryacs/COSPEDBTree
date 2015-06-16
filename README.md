@@ -68,17 +68,20 @@ show this help message and exit
                     USER MUST PROVIDE either p = 1 or 2
 
 -q NO_OF_QUEUES, --queues=NO_OF_QUEUES
+
                     1 - only a single max priority queue is used for
                     storing the score metrics                        
                     2 - two separate queues are used to store the conflicting
                     and non conflicting taxa pairs and corresponding score metrics (default)
 
 -d, --dfsref          
+
                     if TRUE, Multiple parent problem (C2) is tackled -
                     before appying DFS for arbitrary parenting
                     information, it selects the most probable parent candidate. Default = True
 
 -b, --binary          
+
                     if TRUE, it produces a strictly binary supertree.
                     Otherwise, the tree can be non-binary. Default FALSE.
 
