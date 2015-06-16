@@ -29,7 +29,9 @@ COSPEDBTree is developed in Linux Systems (Ubuntu 12.04), using Python 2.7.
 User needs to install following before using this package:
 
 1) Python 2.7 (available in Ubuntu, by default) 
+
 2) Dendropy ( available on the link: https://pythonhosted.org/DendroPy/ ) 
+
 3) Numpy ( available on the link: http://www.numpy.org/ )
 
 For systems having Ubuntu with lower versions, please notify in case of any errors.
@@ -93,13 +95,14 @@ Example of a command (followed for the results published in the manuscript)
 command descriptions: 
 
   1) -I specifies the input filename 
+  
   2) source_tree_input.txt : contains the input collection of trees 
+  
   3) -p option is for specifying the input tree format input file contains the trees in NEWICK format, as specified by the option (-p1) (1 stands for newick)
+  
   4) -b option enables the binary supertree production.
   
   Here the no of queues = 2 and deterministic depth first strategy for final supertree production is employed, as shown in the default configurations.
-
-
 
 The output tree and all the results are printed at console. User can redirect the output results to any standard text file by using standard redirection operation (>). For example, in the above command, all the detailed results (textual descriptions) are redirected to file out.txt.
 
