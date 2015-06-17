@@ -9,21 +9,21 @@ from cStringIO import StringIO
 from optparse import OptionParser
 import sys
 
-# here we add the custom python library functions 
-sys.path.insert(0, '../../../../Phylogenetic_Library_Codes/')
-import supertree_perf_metric
-from supertree_perf_metric import *
-import Input_Output
-from Input_Output import *
-import utilities
-from utilities import *
+## here we add the custom python library functions 
+#sys.path.insert(0, '../../../../Phylogenetic_Library_Codes/')
+#import supertree_perf_metric
+#from supertree_perf_metric import *
+#import Input_Output
+#from Input_Output import *
+#import utilities
+#from utilities import *
 
 # we define custom edge types
-BI_DIRECTED_EDGE = 0	# equality relationship
-DIRECTED_OUT_EDGE = 1
-DIRECTED_IN_EDGE = 2
-NO_EDGE = 3	# no relationship
-UNDEFINED_EDGE = 4
+RELATION_R3 = 0	# equality relationship
+RELATION_R1 = 1
+RELATION_R2 = 2
+RELATION_R4 = 3	# no relationship
+UNDEFINED_RELATION = 4
 
 #---------------------------------------------
 """ this is a dictionary storing cluster of nodes 
@@ -60,7 +60,7 @@ number_of_taxa = 0
 
 # this is the debug level
 # set for printing the necessary information
-DEBUG_LEVEL = 3
+DEBUG_LEVEL = 2
 
 # this text file stores all the printing output
 Output_Text_File = 'complete_output_description.txt'
@@ -167,19 +167,19 @@ class Reln_TaxaPair(object):
     ''' this code section is used when there exists NO EDGE relationship between a pair of taxa
     and we want to detect it '''
     if (not single_edge_prior):
-      """ if there is no vote for any particular edge type other than NO_EDGE,
+      """ if there is no vote for any particular edge type other than RELATION_R4,
       (that is, corresponding settings did not occur in any of the source tree)
-      then we make only the NO_EDGE settings as valid - 
+      then we make only the RELATION_R4 settings as valid - 
       they will only be considered for joining this pair in the final tree """
-      if (self.edge_weight[NO_EDGE] != 0)\
-	and (self.edge_weight[DIRECTED_IN_EDGE] == 0)\
-	and (self.edge_weight[DIRECTED_OUT_EDGE] == 0)\
-	and (self.edge_weight[BI_DIRECTED_EDGE] == 0):
+      if (self.edge_weight[RELATION_R4] != 0)\
+	and (self.edge_weight[RELATION_R2] == 0)\
+	and (self.edge_weight[RELATION_R1] == 0)\
+	and (self.edge_weight[RELATION_R3] == 0):
 	return 1
       else:
 	return 0
     else:
-      outlist = [0, NO_EDGE]
+      outlist = [0, RELATION_R4]
       for edge_type in range(4):
 	if (self.edge_weight[edge_type] == listsum) and (listsum > 0):
 	  outlist = [1, edge_type]
