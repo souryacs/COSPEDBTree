@@ -15,6 +15,7 @@ V1.0 - 15.01.2014 - public release
 V2.0 - 15.03.2014 - rewritten for lowering time complexity
 V3.0 - 28.02.2015 - added binary suprtree and level based scoring options
 V4.0 - 30.03.2015 - added fast input tree processing
+V5.0 - 17.06.2015 - binary refinement and github release
 ''' 
 
 ## Copyright 2013 Sourya Bhattacharyya and Jayanta Mukherjee.
@@ -36,6 +37,8 @@ import UtilFunc
 from UtilFunc import *
 import RefineTree
 from RefineTree import *
+import Conflict_Detect
+from Conflict_Detect import *
 
 ##-----------------------------------------------------
 # this function is useful to parse various options for input data processing
@@ -73,11 +76,11 @@ def parse_options():
 			  2 - two separate queues are used to store the conflicting and non conflicting taxa pairs and corresponding score metrics (default)")
 
   parser.add_option("-d", "--dfsref", \
-			  action="store_true", \
+			  action="store_false", \
 			  dest="dfs_parent_refine", \
 			  default=True, \
 			  help="if TRUE, Multiple parent problem (C2) is tackled - before appying DFS for arbitrary parenting information, \
-			  it selects the most probable parent candidate.")  
+			  it selects the most probable parent candidate. Default TRUE.")  
 
   parser.add_option("-b", "--binary", \
 			  action="store_true", \
@@ -129,7 +132,7 @@ def main():
   #-------------------------
   if (OUTPUT_FILENAME == ""):
     # first create the output directory containing the results
-    dir_of_curr_exec = dir_of_inp_file + 'COSPEDTree_Opt_FastRead'
+    dir_of_curr_exec = dir_of_inp_file + 'COSPEDBTree'
     # update dir_of_curr_exec according to the settigs of input parameters
     dir_of_curr_exec = dir_of_curr_exec + '_Q_' + str(NO_OF_QUEUES)
     if (BINARY_SUPERTREE_OPTION == True):
@@ -141,7 +144,7 @@ def main():
     else:
       dir_of_curr_exec = dir_of_curr_exec + '_D_0'
     # append the current output directory in the text file
-    Output_Text_File = dir_of_curr_exec + '/' + 'COSPEDTree_Complete_Desription.txt'
+    Output_Text_File = dir_of_curr_exec + '/' + 'COSPEDBTree_Complete_Desription.txt'
     # create the directory
     if (os.path.isdir(dir_of_curr_exec) == False):
       mkdr_cmd = 'mkdir ' + dir_of_curr_exec
@@ -154,7 +157,7 @@ def main():
       dir_of_curr_exec = './'
     else:
       dir_of_curr_exec = OUTPUT_FILENAME[:(k+1)]
-    Output_Text_File = dir_of_curr_exec + input_file_name + '_COSPEDTreeOpt_Complete_Desription.txt'
+    Output_Text_File = dir_of_curr_exec + input_file_name + '_COSPEDBTree_Complete_Desription.txt'
   
   #-------------------------
   fp = open(Output_Text_File, 'w')    
@@ -255,7 +258,7 @@ def main():
   
   
   # we print the original connection status for all the tree nodes
-  if (DEBUG_LEVEL >= 2):
+  if (DEBUG_LEVEL > 2):
     for l in TaxaPair_Reln_Dict:
       #print 'printing info for the TaxaPair_Reln_Dict key: ', l
       TaxaPair_Reln_Dict[l]._PrintRelnInfo(l, Output_Text_File)
@@ -302,7 +305,7 @@ def main():
   
   #------------------------------------------------------------
   # print the queue storing the scores of individual relations
-  if (DEBUG_LEVEL >= 2):
+  if (DEBUG_LEVEL > 2):
     if (NO_OF_QUEUES == 2):
       fp = open(Output_Text_File, 'a')
       fp.write('\n printing contents for the non-conflicting queue (couplet relation score)')
@@ -319,6 +322,7 @@ def main():
   then we first process that corresponding queue """
   if (NO_OF_QUEUES == 2):
     Reachability_Graph_Mat = Proc_Queue(Reachability_Graph_Mat, 1, Output_Text_File)
+  
   """ then we process the queue containing the taxa pairs depicting multiple relation instance """
   Reachability_Graph_Mat = Proc_Queue(Reachability_Graph_Mat, 0, Output_Text_File)
   
@@ -391,12 +395,13 @@ def main():
   
   # with the final tree string, finally generate the tree result 
   Final_Supertree_Str = '(' + Final_Supertree_Str + ')'
-  # add - sourya
+    
   fp = open(Output_Text_File, 'a')
   fp.write('\n --- original supertree as newick string --- ' + Final_Supertree_Str) 
+  
   Final_Supertree_Str = Remove_Extra_Paranthesis(Final_Supertree_Str)  
   fp.write('\n --- after removing extra paranthesis -- supertree as newick string --- ' + Final_Supertree_Str) 
-  # end add - sourya
+  fp.close()
   
   # now read this super string in a supertree containing all the input taxa
   Supertree_Final = dendropy.Tree.get_from_string(Final_Supertree_Str, schema="newick")	#preserve_underscores=PRESERVE_UNDERSCORE, default_as_rooted=ROOTED_TREE)
@@ -406,8 +411,17 @@ def main():
   # add - sourya  
   if (BINARY_SUPERTREE_OPTION == True):
     fp = open(Output_Text_File, 'a')
+    
+    # ADD - SOURYA
+    # we apply the update splits routine so as to remove any internal node with outdegree 1
+    # this is required since during DAG based supertree formation, many internal nodes with one outdegree is created
+    # this causes problem when binary refinement is employed
+    Supertree_Final.update_splits(delete_outdegree_one=True)
+    fp.write('\n --- after update splits --- output tree without branch length (in newick format): ' + Supertree_Final.as_newick_string())    
     fp.write('\n --- user provided option for producing strict binary supertree')
     fp.close()
+    # END ADD - SOURYA
+    
     # this function removes all multifurcating clusters and produces binary tree (except problem C3)
     Refine_Supertree_Binary_Form(Supertree_Final, Output_Text_File)
     fp = open(Output_Text_File, 'a')
@@ -420,7 +434,7 @@ def main():
     
   # write this tree on a separate text file
   if (OUTPUT_FILENAME == ""):
-    out_treefilename = dir_of_curr_exec + '/' + 'cospedtree_newick.tre'
+    out_treefilename = dir_of_curr_exec + '/' + 'cospedbtree_newick.tre'
   else:
     out_treefilename = OUTPUT_FILENAME
   
@@ -438,7 +452,72 @@ def main():
   
   # final timestamp
   data_process_timestamp = time.time()      
-  
+    
+  #----------------------------------------------
+  # Performance metric code
+  #----------------------------------------------
+  if 0:
+    # open the output text file
+    fp = open(Output_Text_File, 'a')
+    
+    # examine each of the source trees and find the FP, FN and RF distance with respect to the generated supertree  
+    sumFP = sumFN = sumRF = 0  
+    sumLenSrcTree = 0
+    sum_symmetric_diff = 0
+    fp.write('\n \n\n total edges of supertree: ' + str(len(Supertree_Final.get_edge_set())))  
+    
+    #print 'taxon set of supertree: ', Supertree_Final.infer_taxa()
+    for tr_idx in range(len(Input_Treelist)):
+      # obtain the current source tree and its constituent taxa set
+      Curr_src_tree = Input_Treelist[tr_idx]
+      curr_src_tree_taxa = Curr_src_tree.infer_taxa().labels()
+      curr_src_tree_no_of_taxa = len(curr_src_tree_taxa)
+      
+      # according to the taxa set of the current source tree, 
+      # prune the supertree to get the tree portion containing only this taxa set
+      pruned_tree = dendropy.Tree(Supertree_Final)
+      pruned_tree.retain_taxa_with_labels(curr_src_tree_taxa)
+      
+      # source tree number of edges calculation
+      # it is used to compute normalized RF metric values
+      lenSrcTree = len(Curr_src_tree.get_edge_set())
+      sumLenSrcTree = sumLenSrcTree + lenSrcTree
+      fp.write('\n src tree : ' + str(Curr_src_tree))
+      fp.write('\n pruned supertree: ' + str(pruned_tree))
+      fp.write('\n src tree len: ' + str(lenSrcTree) + ' pruned supertree len: ' + str(len(pruned_tree.get_edge_set())))
+      
+      # determine the false positives and the false negatives 
+      tup = Curr_src_tree.false_positives_and_negatives(pruned_tree)
+      fp.write('   FP_int: ' + str(tup[0]) + '  FN_int:  ' + str(tup[1]))
+      sumFP = sumFP + tup[0]
+      sumFN = sumFN + tup[1]
+      sumRF = sumRF + ((tup[0] + tup[1]) / 2.0)
+      
+      symm_diff = Curr_src_tree.symmetric_difference(pruned_tree)
+      fp.write('   Symmetric difference: ' + str(symm_diff))
+      sum_symmetric_diff = sum_symmetric_diff + symm_diff
+	  
+    # final normalized sumFP's are computed by dividing with the number of trees
+    normsumFP = (sumFP * 1.0) / sumLenSrcTree
+    normsumFN = (sumFN * 1.0) / sumLenSrcTree
+    normsumRF = (sumRF * 1.0) / sumLenSrcTree
+    norm_symm_diff = sum_symmetric_diff / (2.0 * sumLenSrcTree)
+      
+    # print the final result
+    fp.write('\n\n\n ===============>>>>>>>>>>>>>>> FINAL RESULTS \n \n')
+    fp.write('\n ******* absolute sumFP: ' + str(sumFP) + \
+	    '\n ******* absolute sumFN: ' + str(sumFN) + \
+	    '\n ******* absolute sumRF: ' + str(sumRF) + \
+	    '\n ******* absolute Symmetric difference: ' + str(sum_symmetric_diff))
+    
+    fp.write('\n ===============>>>>>>>>>>>>>>> IN TERMS OF NORMALIZED \
+	    (DIVIDED BY THE SUM OF INTERNAL EDGES OF THE SOURCE TREES) ''')  
+    fp.write('\n normsumFP: ' + str(normsumFP) + '\n normsumFN: ' + str(normsumFN) + \
+      '\n normsumRF: ' + str(normsumRF) + '\n norm Symmetric Diff: ' + str(norm_symm_diff)) 
+    
+    fp.close()
+  #----------------------------------------------
+  # end Performance metric code
   #----------------------------------------------
   fp = open(Output_Text_File, 'a')  
   fp.write('\n \n\n ===============>>>>>>>>>>>>>>> TIME COMPLEXITY OF THE METHOD (in seconds) ')
