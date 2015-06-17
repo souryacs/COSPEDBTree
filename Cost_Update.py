@@ -47,16 +47,16 @@ def Lower_Score_Value(inp_queue, i, j):
       return 1
     elif (inp_queue[i][3] > inp_queue[j][3]):
       return 0
-    elif ((inp_queue[i][2] == NO_EDGE) and (inp_queue[j][2] != NO_EDGE)):
+    elif ((inp_queue[i][2] == RELATION_R4) and (inp_queue[j][2] != RELATION_R4)):
       # no edge has high priority
       return 0
-    elif ((inp_queue[j][2] == NO_EDGE) and (inp_queue[i][2] != NO_EDGE)):
+    elif ((inp_queue[j][2] == RELATION_R4) and (inp_queue[i][2] != RELATION_R4)):
       return 1
-    elif ((inp_queue[i][2] == BI_DIRECTED_EDGE) and ((inp_queue[j][2] == DIRECTED_OUT_EDGE) \
-      or (inp_queue[j][2] == DIRECTED_IN_EDGE))):
+    elif ((inp_queue[i][2] == RELATION_R3) and ((inp_queue[j][2] == RELATION_R1) \
+      or (inp_queue[j][2] == RELATION_R2))):
       return 1      
-    elif ((inp_queue[j][2] == BI_DIRECTED_EDGE) and ((inp_queue[i][2] == DIRECTED_OUT_EDGE) \
-      or (inp_queue[i][2] == DIRECTED_IN_EDGE))):
+    elif ((inp_queue[j][2] == RELATION_R3) and ((inp_queue[i][2] == RELATION_R1) \
+      or (inp_queue[i][2] == RELATION_R2))):
       return 0
     elif (TaxaPair_Reln_Dict[(inp_queue[i][0], inp_queue[i][1])]._GetConnPrVal(inp_queue[i][2])\
 	  < TaxaPair_Reln_Dict[(inp_queue[j][0], inp_queue[j][1])]._GetConnPrVal(inp_queue[j][2])):
@@ -70,17 +70,17 @@ def Lower_Score_Value(inp_queue, i, j):
       return 1
     elif (inp_queue[i][3] == inp_queue[j][3]):
       # for tie case of cost
-      if ((inp_queue[i][2] == NO_EDGE) and (inp_queue[j][2] != NO_EDGE)):
+      if ((inp_queue[i][2] == RELATION_R4) and (inp_queue[j][2] != RELATION_R4)):
 	# change - sourya
 	# no edge has high priority
 	return 0
-      elif ((inp_queue[j][2] == NO_EDGE) and (inp_queue[i][2] != NO_EDGE)):
+      elif ((inp_queue[j][2] == RELATION_R4) and (inp_queue[i][2] != RELATION_R4)):
 	return 1
       # end change - sourya
-      elif ((inp_queue[i][2] == BI_DIRECTED_EDGE) and ((inp_queue[j][2] == DIRECTED_OUT_EDGE) or (inp_queue[j][2] == DIRECTED_IN_EDGE))):
+      elif ((inp_queue[i][2] == RELATION_R3) and ((inp_queue[j][2] == RELATION_R1) or (inp_queue[j][2] == RELATION_R2))):
 	# bi directed edge is set to low priority, compared to other directed edges - add - sourya
 	return 1      
-      elif ((inp_queue[j][2] == BI_DIRECTED_EDGE) and ((inp_queue[i][2] == DIRECTED_OUT_EDGE) or (inp_queue[i][2] == DIRECTED_IN_EDGE))):
+      elif ((inp_queue[j][2] == RELATION_R3) and ((inp_queue[i][2] == RELATION_R1) or (inp_queue[i][2] == RELATION_R2))):
 	return 0
       elif (TaxaPair_Reln_Dict[(inp_queue[i][0], inp_queue[i][1])]._GetConnPrVal(inp_queue[i][2])\
 	    < TaxaPair_Reln_Dict[(inp_queue[j][0], inp_queue[j][1])]._GetConnPrVal(inp_queue[j][2])):
@@ -114,15 +114,15 @@ def Lower_Score_Value(inp_queue, i, j):
     return 0
   else:	#if (inp_queue[i][3] == inp_queue[j][3]):
     # for tie case of cost
-    if ((inp_queue[i][2] == NO_EDGE) and (inp_queue[j][2] != NO_EDGE)):
+    if ((inp_queue[i][2] == RELATION_R4) and (inp_queue[j][2] != RELATION_R4)):
       # no edge has low priority
       return 1
-    elif ((inp_queue[j][2] == NO_EDGE) and (inp_queue[i][2] != NO_EDGE)):	#added
+    elif ((inp_queue[j][2] == RELATION_R4) and (inp_queue[i][2] != RELATION_R4)):	#added
       return 0
-    elif ((inp_queue[i][2] == BI_DIRECTED_EDGE) and ((inp_queue[j][2] == DIRECTED_OUT_EDGE) or (inp_queue[j][2] == DIRECTED_IN_EDGE))):
+    elif ((inp_queue[i][2] == RELATION_R3) and ((inp_queue[j][2] == RELATION_R1) or (inp_queue[j][2] == RELATION_R2))):
       # bi directed edge is set to low priority, compared to other directed edges - add - sourya
       return 1      
-    elif ((inp_queue[j][2] == BI_DIRECTED_EDGE) and ((inp_queue[i][2] == DIRECTED_OUT_EDGE) or (inp_queue[i][2] == DIRECTED_IN_EDGE))):	#added
+    elif ((inp_queue[j][2] == RELATION_R3) and ((inp_queue[i][2] == RELATION_R1) or (inp_queue[i][2] == RELATION_R2))):	#added
       return 0
     elif (TaxaPair_Reln_Dict[(inp_queue[i][0], inp_queue[i][1])]._GetConnPrVal(inp_queue[i][2])\
 	  < TaxaPair_Reln_Dict[(inp_queue[j][0], inp_queue[j][1])]._GetConnPrVal(inp_queue[j][2])):
@@ -151,10 +151,10 @@ def Lower_Score_Value(inp_queue, i, j):
     return 1
   elif (inp_queue[i][3] == inp_queue[j][3]):
     # for tie case of cost
-    if ((inp_queue[i][2] == NO_EDGE) and (inp_queue[j][2] != NO_EDGE)):
+    if ((inp_queue[i][2] == RELATION_R4) and (inp_queue[j][2] != RELATION_R4)):
       # no edge has low priority
       return 1
-    elif ((inp_queue[i][2] == BI_DIRECTED_EDGE) and ((inp_queue[j][2] == DIRECTED_OUT_EDGE) or (inp_queue[j][2] == DIRECTED_IN_EDGE))):	# add - sourya
+    elif ((inp_queue[i][2] == RELATION_R3) and ((inp_queue[j][2] == RELATION_R1) or (inp_queue[j][2] == RELATION_R2))):	# add - sourya
       # bi directed edge is set to low priority, compared to other directed edges - add - sourya
       return 1      
     elif (TaxaPair_Reln_Dict[(inp_queue[i][0], inp_queue[i][1])]._GetConnPrVal(inp_queue[i][2])\
