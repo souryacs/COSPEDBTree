@@ -18,9 +18,9 @@ def ComputeScore(clust1, clust2, Output_Text_File):
       key1 = (t1, t2)
       key2 = (t2, t1)
       if key1 in TaxaPair_Reln_Dict:
-	score_val = score_val + TaxaPair_Reln_Dict[key1]._GetConnPrVal(DIRECTED_OUT_EDGE)
+	score_val = score_val + TaxaPair_Reln_Dict[key1]._GetConnPrVal(RELATION_R1)
       elif key2 in TaxaPair_Reln_Dict:
-	score_val = score_val + TaxaPair_Reln_Dict[key2]._GetConnPrVal(DIRECTED_IN_EDGE)
+	score_val = score_val + TaxaPair_Reln_Dict[key2]._GetConnPrVal(RELATION_R2)
       else:
 	if (DEBUG_LEVEL > 2):
 	  fp.write('\n score compute -- key pair ' + str(t1) + ',' + str(t2) + ' does not exist ')
@@ -106,16 +106,35 @@ def SolveMultipleParentC2Problem(Output_Text_File):
 	Cluster_Info_Dict[cx]._PrintClusterInfo(cx, Output_Text_File)
     
 ##-----------------------------------------------------    
-# following code removes extra paranthesis (thus producing insignificant edges) 
-# from the tree expression contained in the string
+""" 
+following code removes extra paranthesis (thus producing insignificant edges) 
+from the supertree expression contained in the string Final_Supertree_Str
+this is important since the original string (and thus the tree) may contain 
+internal nodes of outdegree 1, thus can be removed 
+employing the update_splits routine in the dendropy often causes trouble
+it is better to manually track the number of taxa and the occurrences of 
+enclosing brackets within the string expression
+"""
 def Remove_Extra_Paranthesis(Final_Supertree_Str):
+  # first we convert the input string expression in a list format
+  # so as to traverse it in position specific manner
   L = list(Final_Supertree_Str)
-  SL = []	# stack list
+  # this is a stack (list structure) which contains the positions of the first brackets encountered
+  # within the input string expression
+  # this is required to keep track of the correspondence between the opening and the closing brackets
+  SL = []	
+  # this is a dictionary storing the positions of respective opening and closing brackets
+  # the position of opening bracket is the dictionary key
+  # the value for one key of the dictionary contains the position of the closing bracket
   first_bracket_dict = dict()
-  
+
+  # scan through the tree expression string
   for i in range(len(L)):
+    # append the position of an opening bracket in the stack
     if (L[i] == '('):
       SL.append(i)
+    # for a closing bracket, retrieve the corresponding opening bracket position
+    # and enter those positions in the dictionary
     elif (L[i] == ')'):
       first_bracket_idx = SL.pop()
       first_bracket_dict.setdefault(first_bracket_idx, i)
@@ -190,7 +209,10 @@ def PrintNewick(root_clust_node_idx):
     for l in Cluster_Info_Dict[root_clust_node_idx]._GetOutEdgeList():
       if (Cluster_Info_Dict[l]._GetExploredStatus() == 0):
 	outnodes.append(l)
+    # comment - sourya
     if (len(outnodes) == 0):
+    # add - sourya
+    #if (len(outnodes) <= 1):
       spec_list = Cluster_Info_Dict[root_clust_node_idx]._GetSpeciesList()
       if (len(spec_list) > 1):
 	Tree_Str_List = Tree_Str_List + '('
@@ -272,12 +294,12 @@ def DefineLeafPairReln(xl_val, node1, node2, edge_type):
   elif key2 in TaxaPair_Reln_Dict:
     TaxaPair_Reln_Dict[key2]._AddSupportingTree()
     TaxaPair_Reln_Dict[key2]._AddLineage(xl_val)
-    if (edge_type == BI_DIRECTED_EDGE) or (edge_type == NO_EDGE):
+    if (edge_type == RELATION_R3) or (edge_type == RELATION_R4):
       TaxaPair_Reln_Dict[key2]._AddEdgeCount(edge_type)
-    elif (edge_type == DIRECTED_OUT_EDGE):
-      TaxaPair_Reln_Dict[key2]._AddEdgeCount(DIRECTED_IN_EDGE)
+    elif (edge_type == RELATION_R1):
+      TaxaPair_Reln_Dict[key2]._AddEdgeCount(RELATION_R2)
     else:
-      TaxaPair_Reln_Dict[key2]._AddEdgeCount(DIRECTED_OUT_EDGE)
+      TaxaPair_Reln_Dict[key2]._AddEdgeCount(RELATION_R1)
   else:
     TaxaPair_Reln_Dict.setdefault(key1, Reln_TaxaPair())
     TaxaPair_Reln_Dict[key1]._AddSupportingTree()
@@ -290,10 +312,19 @@ def DefineLeafPairReln(xl_val, node1, node2, edge_type):
 # this function derives coupket relations belonging to one tree
 # that is provided as an input argument to this function
 def DeriveCoupletRelations(Curr_tree):
+  
+  # add - sourya
+  Curr_tree_taxa_count = len(Curr_tree.infer_taxa().labels())  
+  
   # traverse the internal nodes of the tree in postorder fashion
   for curr_node in Curr_tree.postorder_internal_node_iter():
-    # compute the XL value associated with this node
-    xl_val = (len(curr_node.leaf_nodes()) - 2)
+    # compute the XL value associated with this node    
+    # comment - sourya
+    # this is the absolute value of extra lineage with respect to the subtree rooted under current node
+    #xl_val = (len(curr_node.leaf_nodes()) - 2)
+    # this is the normalized value of extra lineage with respect to the subtree rooted under current node
+    # when we divide this absolute value with respect to the number of taxa of the current tree
+    xl_val = ((len(curr_node.leaf_nodes()) - 2) * 1.0) / Curr_tree_taxa_count
     
     # list the leaf and internal children of the current node
     curr_node_child_leaf_nodes = []
@@ -308,7 +339,7 @@ def DeriveCoupletRelations(Curr_tree):
     if (len(curr_node_child_leaf_nodes) > 1):
       for i in range(len(curr_node_child_leaf_nodes) - 1):
 	for j in range(i+1, len(curr_node_child_leaf_nodes)):
-	  DefineLeafPairReln(xl_val, curr_node_child_leaf_nodes[i], curr_node_child_leaf_nodes[j], BI_DIRECTED_EDGE)
+	  DefineLeafPairReln(xl_val, curr_node_child_leaf_nodes[i], curr_node_child_leaf_nodes[j], RELATION_R3)
     
     # one leaf node (direct descendant) and another leaf node (under one internal node)
     # will be related by ancestor / descendant relations
@@ -316,15 +347,15 @@ def DeriveCoupletRelations(Curr_tree):
       for p in curr_node_child_leaf_nodes:
 	for q in curr_node_child_internal_nodes:
 	  for r in q.leaf_nodes():
-	    DefineLeafPairReln(xl_val, p, r, DIRECTED_OUT_EDGE)
+	    DefineLeafPairReln(xl_val, p, r, RELATION_R1)
     
-    # finally a pair of leaf nodes which are descendant of internal nodes will be related by NO_EDGE relation
+    # finally a pair of leaf nodes which are descendant of internal nodes will be related by RELATION_R4 relation
     if (len(curr_node_child_internal_nodes) > 1):
       for i in range(len(curr_node_child_internal_nodes) - 1):
 	for j in range(i+1, len(curr_node_child_internal_nodes)):
 	  for p in curr_node_child_internal_nodes[i].leaf_nodes():
 	    for q in curr_node_child_internal_nodes[j].leaf_nodes():
-	      DefineLeafPairReln(xl_val, p, q, NO_EDGE)
+	      DefineLeafPairReln(xl_val, p, q, RELATION_R4)
 
 
 #--------------------------------------------------------
@@ -335,3 +366,31 @@ def PrintQueueInfo(inp_queue, Output_Text_File):
   for elem in inp_queue:
     fp.write(' ' + str(elem))
   fp.close()
+
+##-----------------------------------------------------
+# this function reads the input tree list file
+# parameters: ROOTED_TREE - whether the treelist to be read as rooted format
+# PRESERVE_UNDERSCORE: whether underscores of the taxa name will be preserved or not
+# INPUT_FILE_FORMAT: data is read from the file according to NEWICK or NEXUS format
+# INPUT_FILENAME: file containing the input treelist
+
+def Read_Input_Treelist(ROOTED_TREE, PRESERVE_UNDERSCORE, INPUT_FILE_FORMAT, INPUT_FILENAME):
+  Inp_TreeList = dendropy.TreeList.get_from_path(INPUT_FILENAME, schema=INPUT_FILE_FORMAT, \
+						  preserve_underscores=PRESERVE_UNDERSCORE, \
+						  default_as_rooted=ROOTED_TREE)
+  
+  return Inp_TreeList
+
+#--------------------------------------------------
+# this function returns the label of an internal or a leaf node 
+# in terms of newick representation
+def Node_Label(inp_node):
+  return str(inp_node.as_newick_string(suppress_edge_lengths=True))
+
+#-----------------------------------------------------
+# this is the taxa list generated from current internal node
+def GetTaxaUnderInternalNode(curr_node):
+  taxa_list_from_curr_internal_node = []
+  for n in curr_node.leaf_nodes():
+    taxa_list_from_curr_internal_node.append(n.taxon.label)
+  return taxa_list_from_curr_internal_node
