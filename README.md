@@ -24,17 +24,32 @@ COSPEDBTree proposes improvement of the earlier COSPEDTree algorithm, by the fol
 Dependencies / Installation Requirements
 --------------------------
 
-COSPEDBTree is developed in Linux Systems (Ubuntu 12.04), using Python 2.7.
+COSPEDBTree is developed in Linux Systems (Ubuntu 14.04), using Python 2.7.
 
 User needs to install following before using this package:
 
 1) Python 2.7 (available in Ubuntu, by default) 
 
-2) Dendropy ( available on the link: https://pythonhosted.org/DendroPy/ ) 
+Note: We have not tested the code on Python 3. Any user having Python 3 environment need to check the correct execution of our code, and optionally needs to upgrade it accordingly.
+
+We plan to support Python 3 environment in some future release.
+
+2) Dendropy 3.12.0 ( available on the link: https://pythonhosted.org/DendroPy/ ) 
+
+Note: there is a new release of Dendropy 4.0 but we have used 3.12.0 for the implementation. We did not upgrade the code for Dendropy 4.0 support, so any user having this new version of Dendropy might need to check the functionalities of COSPEDBTree and possibly upgrade / replace / edit few dendrop[y related functions. So, we recommend users to use the earlier version of Dendropy, to avoid any conflict.
+
+Support for Dendropy 4 and corresponding update of code will be done in a future release.
 
 3) Numpy ( available on the link: http://www.numpy.org/ )
 
-For systems having Ubuntu with lower versions, please notify in case of any errors.
+User can install Numpy using pip (python software downloader tool) module, which contains the latest Numpy module in it. We found that Numpy module in the traditional Apt-Get repository is of lower version.
+
+UBUNTU version issues
+-------------------
+
+For systems having Ubuntu with lower versions (lower than 14.04), please notify in case of any errors due to OS environments.
+
+Note: We do not support development version corresponding to Windows XP and MacOS, although that will be done in some future release.
 
 Execution
 ------------
