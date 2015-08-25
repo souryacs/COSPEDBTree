@@ -84,10 +84,10 @@ def parse_options():
 			  1 - input phylogenetic trees are assigned separate weights (default)")
 
   parser.add_option("-d", "--dynscore", \
-			  action="store_false", \
+			  action="store_true", \
 			  dest="dynamic_score", \
-			  default=True, \
-			  help="if true, then this option dynamically updates support score values - Default TRUE")
+			  default=False, \
+			  help="if true, then this option dynamically updates support score values - Default FALSE")
 
   parser.add_option("-b", "--binary", \
 			  action="store_false", \
@@ -137,7 +137,7 @@ def parse_options():
 			  type="int", \
 			  action="store", \
 			  dest="class_of_metric", \
-			  default=1, \
+			  default=2, \
 			  help="valid only if binary supertree is produced \
 			  1 - absolute sum of metric value (either XT or Branch count) between couplets\
 			  2 - simple average of  metric value (either XT or Branch count) between couplets \
