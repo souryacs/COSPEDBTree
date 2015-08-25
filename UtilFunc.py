@@ -18,9 +18,11 @@ def ComputeScore(clust1, clust2, Output_Text_File):
       key1 = (t1, t2)
       key2 = (t2, t1)
       if key1 in TaxaPair_Reln_Dict:
-	score_val = score_val + TaxaPair_Reln_Dict[key1]._GetConnPrVal(RELATION_R1)
+	#score_val = score_val + TaxaPair_Reln_Dict[key1]._GetConnPrVal(RELATION_R1)
+	score_val = score_val + TaxaPair_Reln_Dict[key1]._GetEdgeWeight(RELATION_R1)
       elif key2 in TaxaPair_Reln_Dict:
-	score_val = score_val + TaxaPair_Reln_Dict[key2]._GetConnPrVal(RELATION_R2)
+	#score_val = score_val + TaxaPair_Reln_Dict[key2]._GetConnPrVal(RELATION_R2)
+	score_val = score_val + TaxaPair_Reln_Dict[key2]._GetEdgeWeight(RELATION_R2)
       else:
 	if (DEBUG_LEVEL > 2):
 	  fp.write('\n score compute -- key pair ' + str(t1) + ',' + str(t2) + ' does not exist ')
@@ -122,7 +124,7 @@ def Remove_Extra_Paranthesis(Final_Supertree_Str):
   # this is a stack (list structure) which contains the positions of the first brackets encountered
   # within the input string expression
   # this is required to keep track of the correspondence between the opening and the closing brackets
-  SL = []	
+  SL = []
   # this is a dictionary storing the positions of respective opening and closing brackets
   # the position of opening bracket is the dictionary key
   # the value for one key of the dictionary contains the position of the closing bracket
@@ -152,6 +154,23 @@ def Remove_Extra_Paranthesis(Final_Supertree_Str):
 	L.insert(i, '$')
 	L.pop(sb1)
 	L.insert(sb1, '$')
+	
+    # add - sourya
+    # if enclosing brackets contain only one species 
+    # then those brackets need to be removed
+    if (L[i] == '('):
+      sb = first_bracket_dict[i]
+      f = 0
+      for j in range(i,sb):
+	if (L[j] == ','):
+	  f = 1
+	  break
+      if (f == 0):
+	L.pop(i)
+	L.insert(i, '$')
+	L.pop(sb)
+	L.insert(sb, '$')
+    # end add - sourya
   
   if 0:	#(DEBUG_LEVEL > 2):
     print 'L : ', L
@@ -282,49 +301,88 @@ def Append_Cluster_Taxa_Label(target_clust_idx, target_taxa_label):
     Taxa_Info_Dict[target_taxa_label]._Set_Clust_Idx_taxa_Part(target_clust_idx)      
         
 #--------------------------------------------------------
+def FindComplementaryReln(inp_reln):
+  if (inp_reln == RELATION_R3) or (inp_reln == RELATION_R4):
+    return inp_reln
+  elif (inp_reln == RELATION_R1):
+    return RELATION_R2
+  else:
+    return RELATION_R1
+        
+#--------------------------------------------------------
+def AddInputRelnInfo(taxon1, taxon2, reln_type):
+  Taxa_Info_Dict[taxon1]._AddInputRelnTaxon(taxon2, reln_type)
+  Taxa_Info_Dict[taxon2]._AddInputRelnTaxon(taxon1, FindComplementaryReln(reln_type))
+
+#--------------------------------------------------------
 # this function defines relationship between a pair of nodes in a tree
 # the relationship is either ancestor / descendant, or siblings, or no relationship 
-def DefineLeafPairReln(xl_val, node1, node2, edge_type):
+def DefineLeafPairReln(lca_node_rank, node1_rank, node2_rank, xl_val, sum_of_branch_count, node1, node2, edge_type, tr_idx, TREE_WEIGHT_ASSIGNED, DYNAMIC_SCORE_UPDATE):
   key1 = (node1.taxon.label, node2.taxon.label)
   key2 = (node2.taxon.label, node1.taxon.label)
+  
+  # derive the accumulated rank information
+  sum_acc_rank = 0
+  if (node1_rank < lca_node_rank):
+    sum_acc_rank = sum_acc_rank + (((lca_node_rank - node1_rank) * (lca_node_rank + node1_rank - 1)) / 2)
+  if (node2_rank < lca_node_rank):
+    sum_acc_rank = sum_acc_rank + (((lca_node_rank - node2_rank) * (lca_node_rank + node2_rank - 1)) / 2)
+  # add the rank of the LCA node
+  sum_acc_rank = sum_acc_rank + lca_node_rank  
+  
+  # we add the input taxon relation information for each of the taxon struct
+  if (DYNAMIC_SCORE_UPDATE == True):
+    AddInputRelnInfo(key1[0], key1[1], edge_type)
+  
   if key1 in TaxaPair_Reln_Dict:
-    TaxaPair_Reln_Dict[key1]._AddSupportingTree()
+    if (TREE_WEIGHT_ASSIGNED == 0):
+      TaxaPair_Reln_Dict[key1]._AddSupportingTree()
     TaxaPair_Reln_Dict[key1]._AddLineage(xl_val)
-    TaxaPair_Reln_Dict[key1]._AddEdgeCount(edge_type)
+    TaxaPair_Reln_Dict[key1]._AddEdgeCount(edge_type, TREE_WEIGHT_ASSIGNED, tr_idx)
+    TaxaPair_Reln_Dict[key1]._AddLevel(sum_of_branch_count)
+    #TaxaPair_Reln_Dict[key1]._AddAccumulatedRank(sum_acc_rank)
+    TaxaPair_Reln_Dict[key1]._AddLCARank(lca_node_rank)
   elif key2 in TaxaPair_Reln_Dict:
-    TaxaPair_Reln_Dict[key2]._AddSupportingTree()
+    if (TREE_WEIGHT_ASSIGNED == 0):
+      TaxaPair_Reln_Dict[key2]._AddSupportingTree()
     TaxaPair_Reln_Dict[key2]._AddLineage(xl_val)
-    if (edge_type == RELATION_R3) or (edge_type == RELATION_R4):
-      TaxaPair_Reln_Dict[key2]._AddEdgeCount(edge_type)
-    elif (edge_type == RELATION_R1):
-      TaxaPair_Reln_Dict[key2]._AddEdgeCount(RELATION_R2)
-    else:
-      TaxaPair_Reln_Dict[key2]._AddEdgeCount(RELATION_R1)
+    TaxaPair_Reln_Dict[key2]._AddLevel(sum_of_branch_count)
+    #TaxaPair_Reln_Dict[key2]._AddAccumulatedRank(sum_acc_rank)
+    TaxaPair_Reln_Dict[key2]._AddLCARank(lca_node_rank)
+    TaxaPair_Reln_Dict[key2]._AddEdgeCount(FindComplementaryReln(edge_type), TREE_WEIGHT_ASSIGNED, tr_idx)
   else:
-    TaxaPair_Reln_Dict.setdefault(key1, Reln_TaxaPair())
-    TaxaPair_Reln_Dict[key1]._AddSupportingTree()
+    if (TREE_WEIGHT_ASSIGNED == 0):
+      TaxaPair_Reln_Dict.setdefault(key1, Reln_TaxaPair())
+      TaxaPair_Reln_Dict[key1]._AddSupportingTree()
+    else:
+      print '*** key is still not in the dictionary ****'
     TaxaPair_Reln_Dict[key1]._AddLineage(xl_val)
-    TaxaPair_Reln_Dict[key1]._AddEdgeCount(edge_type)
+    TaxaPair_Reln_Dict[key1]._AddEdgeCount(edge_type, TREE_WEIGHT_ASSIGNED, tr_idx)
+    TaxaPair_Reln_Dict[key1]._AddLevel(sum_of_branch_count)
+    #TaxaPair_Reln_Dict[key1]._AddAccumulatedRank(sum_acc_rank)
+    TaxaPair_Reln_Dict[key1]._AddLCARank(lca_node_rank)
       
   return
 
 #--------------------------------------------------------
 # this function derives coupket relations belonging to one tree
 # that is provided as an input argument to this function
-def DeriveCoupletRelations(Curr_tree):
+def DeriveCoupletRelations(Curr_tree, tr_idx, TREE_WEIGHT_ASSIGNED, DYNAMIC_SCORE_UPDATE):
   
-  # add - sourya
-  Curr_tree_taxa_count = len(Curr_tree.infer_taxa().labels())  
+  no_of_taxa = len(Curr_tree.infer_taxa().labels())  
   
   # traverse the internal nodes of the tree in postorder fashion
   for curr_node in Curr_tree.postorder_internal_node_iter():
     # compute the XL value associated with this node    
     # comment - sourya
-    # this is the absolute value of extra lineage with respect to the subtree rooted under current node
-    #xl_val = (len(curr_node.leaf_nodes()) - 2)
     # this is the normalized value of extra lineage with respect to the subtree rooted under current node
     # when we divide this absolute value with respect to the number of taxa of the current tree
-    xl_val = ((len(curr_node.leaf_nodes()) - 2) * 1.0) / Curr_tree_taxa_count
+    # comment - sourya
+    #xl_val = ((len(curr_node.leaf_nodes()) - 2) * 1.0) / no_of_taxa
+    # add - sourya
+    xl_val = (len(curr_node.leaf_nodes()) - 2)
+    curr_node_level = curr_node.level()
+    curr_node_rank = no_of_taxa - curr_node_level
     
     # list the leaf and internal children of the current node
     curr_node_child_leaf_nodes = []
@@ -339,7 +397,11 @@ def DeriveCoupletRelations(Curr_tree):
     if (len(curr_node_child_leaf_nodes) > 1):
       for i in range(len(curr_node_child_leaf_nodes) - 1):
 	for j in range(i+1, len(curr_node_child_leaf_nodes)):
-	  DefineLeafPairReln(xl_val, curr_node_child_leaf_nodes[i], curr_node_child_leaf_nodes[j], RELATION_R3)
+	  node1_rank = no_of_taxa - curr_node_child_leaf_nodes[i].parent_node.level()
+	  node2_rank = no_of_taxa - curr_node_child_leaf_nodes[j].parent_node.level()	  
+	  sum_of_branch_count = ((curr_node_child_leaf_nodes[i].level() - curr_node_level) + (curr_node_child_leaf_nodes[j].level() - curr_node_level))
+	  DefineLeafPairReln(curr_node_rank, node1_rank, node2_rank, xl_val, sum_of_branch_count, \
+	    curr_node_child_leaf_nodes[i], curr_node_child_leaf_nodes[j], RELATION_R3, tr_idx, TREE_WEIGHT_ASSIGNED, DYNAMIC_SCORE_UPDATE)
     
     # one leaf node (direct descendant) and another leaf node (under one internal node)
     # will be related by ancestor / descendant relations
@@ -347,7 +409,10 @@ def DeriveCoupletRelations(Curr_tree):
       for p in curr_node_child_leaf_nodes:
 	for q in curr_node_child_internal_nodes:
 	  for r in q.leaf_nodes():
-	    DefineLeafPairReln(xl_val, p, r, RELATION_R1)
+	    node1_rank = no_of_taxa - p.parent_node.level()
+	    node2_rank = no_of_taxa - r.parent_node.level()	    
+	    sum_of_branch_count = ((p.level() - curr_node_level) + (r.level() - curr_node_level))
+	    DefineLeafPairReln(curr_node_rank, node1_rank, node2_rank, xl_val, sum_of_branch_count, p, r, RELATION_R1, tr_idx, TREE_WEIGHT_ASSIGNED, DYNAMIC_SCORE_UPDATE)
     
     # finally a pair of leaf nodes which are descendant of internal nodes will be related by RELATION_R4 relation
     if (len(curr_node_child_internal_nodes) > 1):
@@ -355,7 +420,10 @@ def DeriveCoupletRelations(Curr_tree):
 	for j in range(i+1, len(curr_node_child_internal_nodes)):
 	  for p in curr_node_child_internal_nodes[i].leaf_nodes():
 	    for q in curr_node_child_internal_nodes[j].leaf_nodes():
-	      DefineLeafPairReln(xl_val, p, q, RELATION_R4)
+	      node1_rank = no_of_taxa - p.parent_node.level()
+	      node2_rank = no_of_taxa - q.parent_node.level()      
+	      sum_of_branch_count = ((p.level() - curr_node_level) + (q.level() - curr_node_level))
+	      DefineLeafPairReln(curr_node_rank, node1_rank, node2_rank, xl_val, sum_of_branch_count, p, q, RELATION_R4, tr_idx, TREE_WEIGHT_ASSIGNED, DYNAMIC_SCORE_UPDATE)
 
 
 #--------------------------------------------------------
@@ -373,7 +441,6 @@ def PrintQueueInfo(inp_queue, Output_Text_File):
 # PRESERVE_UNDERSCORE: whether underscores of the taxa name will be preserved or not
 # INPUT_FILE_FORMAT: data is read from the file according to NEWICK or NEXUS format
 # INPUT_FILENAME: file containing the input treelist
-
 def Read_Input_Treelist(ROOTED_TREE, PRESERVE_UNDERSCORE, INPUT_FILE_FORMAT, INPUT_FILENAME):
   Inp_TreeList = dendropy.TreeList.get_from_path(INPUT_FILENAME, schema=INPUT_FILE_FORMAT, \
 						  preserve_underscores=PRESERVE_UNDERSCORE, \
@@ -394,3 +461,45 @@ def GetTaxaUnderInternalNode(curr_node):
   for n in curr_node.leaf_nodes():
     taxa_list_from_curr_internal_node.append(n.taxon.label)
   return taxa_list_from_curr_internal_node
+
+#----------------------------------------------------
+def AssignMatrixWeights(Source_Treelist):
+  global Matrix_Weight_Val
+  
+  for tr in range(len(Source_Treelist)):
+    supp_taxa_count = 0
+    curr_tree_taxa_set = Source_Treelist[tr].infer_taxa()
+    number_of_taxa = len(curr_tree_taxa_set)
+    for i in range(number_of_taxa - 1):
+      t1 = curr_tree_taxa_set[i]
+      for j in range(i+1, number_of_taxa):
+	t2 = curr_tree_taxa_set[j]
+	key1 = (t1.label, t2.label)
+	key2 = (t2.label, t1.label)
+	if key1 in TaxaPair_Reln_Dict:
+	  target_key = key1
+	elif key2 in TaxaPair_Reln_Dict:
+	  target_key = key2
+	else:
+	  continue
+	if (TaxaPair_Reln_Dict[target_key]._GetNoSupportTrees() >= 2):
+	  # we find that both the taxa within this couplet should contribute to the 
+	  # supporting taxa count - sourya
+	  supp_taxa_count = supp_taxa_count + 2	#1
+	  break
+    
+    ## supporting taxa count related weight
+    #supp_taxa_related_tree_weight = (1.0 / supp_taxa_count)
+   
+    # now adjust the matrix weight value of the current location
+    #Matrix_Weight_Val.append(supp_taxa_related_tree_weight)
+    #Matrix_Weight_Val.append(number_of_taxa)
+    Matrix_Weight_Val.append(supp_taxa_count)
+
+#--------------------------------
+def PrintMatrixWeights(Output_Text_File):
+  global Matrix_Weight_Val
+  fp = open(Output_Text_File, 'a')    
+  for i in range(len(Matrix_Weight_Val)):
+    fp.write('\n tree index: ' + str(i+1) + ' weight: ' + str(Matrix_Weight_Val[i]))
+  fp.close()
