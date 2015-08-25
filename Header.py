@@ -7,7 +7,9 @@ import time
 import os
 from cStringIO import StringIO
 from optparse import OptionParser
-import sys
+#import sys
+#import operator
+#from operator import itemgetter
 
 ## here we add the custom python library functions 
 #sys.path.insert(0, '../../../../Phylogenetic_Library_Codes/')
@@ -18,12 +20,42 @@ import sys
 #import utilities
 #from utilities import *
 
+''' this variable is for establish a new connection which is not there in the source trees
+that is, two nodes are not in the same source tree, 
+thus there is no relationship (even the relationship "NO_EDGE" is not there)
+and during tree construction, the connection is coming between them '''
+ORIG_DIFF_SRC_TREE_CONNECT_SCORE = 0	#-1
+
+''' this variable signifies that original 'NO_EDGE' connection is not preserved in the derived tree '''
+ORIG_NO_EDGE_BECOME_CONNECTED = -3 
+
+''' this is for the case where original 'NO_EDGE' connection is remained in the derived tree '''
+ORIG_NO_EDGE_REMAIN_NO_EDGE = 2
+
+
+
 # we define custom edge types
 RELATION_R3 = 0	# equality relationship
 RELATION_R1 = 1
 RELATION_R2 = 2
 RELATION_R4 = 3	# no relationship
 UNDEFINED_RELATION = 4
+
+# variables used to denote whether we use traditional NJ method
+# or use a variant of it, namely the agglomerative clustering
+TRADITIONAL_NJ = 1
+AGGLO_CLUST = 2
+
+# variables used to denote the distance metric employed for agglomerative clustering
+EXTRA_TAXA = 1
+ACC_BRANCH_COUNT = 2
+PROD_EXTRA_TAXA_BRANCH_COUNT = 3
+PROD_EXTRA_TAXA_ACC_RANK = 4
+
+# class of distance metric values
+ABSOLUTE_SUM_METRIC_VAL = 1
+SIMPLE_AVG_METRIC_VAL = 2
+MODE_BASED_AVG_METRIC_VAL = 3
 
 #---------------------------------------------
 """ this is a dictionary storing cluster of nodes 
@@ -54,16 +86,16 @@ COMPLETE_INPUT_TAXA_LIST = []
 """ this list contains the current set of active cluster indices """
 CURRENT_CLUST_IDX_LIST = []
 
-# this variable stores the total number of taxa for all the source trees
-number_of_taxa = 0
-#---------------------------------------------
+# this variable associates weight of matrix corresponding to individual source trees
+Matrix_Weight_Val = []
+
+# new couplet connectivity at each iteration is checked by this variable
+# components: 1) taxon 1, 2) taxon2, 3) relation type
+COUPLET_CONNECTED_LIST = []
 
 # this is the debug level
 # set for printing the necessary information
-DEBUG_LEVEL = 2
-
-# this text file stores all the printing output
-Output_Text_File = 'complete_output_description.txt'
+DEBUG_LEVEL = 1
 
 ##-----------------------------------------------------
 ''' this class defines a leaf node of input candidate source trees
@@ -74,7 +106,51 @@ class Single_Taxa(object):
     if the value is -1 (< 0) then it is still not inserted in a cluster 
     otherwise it is part of a valid cluster """
     self.clust_idx_part = -1
-
+    
+    # these lists store the taxa connected to this taxa via one of the four types of relations
+    # with respect to the input trees
+    self.Reln_R1_list = []
+    self.Reln_R2_list = []
+    self.Reln_R3_list = []
+    self.Reln_R4_list = []
+    
+  # these functions add taxa to individual relation lists
+  # based on the input relation value
+  def _AddInputRelnTaxon(self, inp_taxon, reln_type):
+    if (reln_type == RELATION_R3) and (inp_taxon not in self.Reln_R3_list):
+      self.Reln_R3_list.append(inp_taxon)
+    if (reln_type == RELATION_R2) and (inp_taxon not in self.Reln_R2_list):
+      self.Reln_R2_list.append(inp_taxon)
+    if (reln_type == RELATION_R1) and (inp_taxon not in self.Reln_R1_list):
+      self.Reln_R1_list.append(inp_taxon)
+    if (reln_type == RELATION_R4) and (inp_taxon not in self.Reln_R4_list):
+      self.Reln_R4_list.append(inp_taxon)
+    
+  # these functions remove taxon information from the respective relation list
+  def _RemSelectedReln(self, reln_type, inp_taxon):
+    if (reln_type == RELATION_R3) and (inp_taxon in self.Reln_R3_list):
+      self.Reln_R3_list.remove(inp_taxon)
+    elif (reln_type == RELATION_R2) and (inp_taxon in self.Reln_R2_list):
+      self.Reln_R2_list.remove(inp_taxon)
+    elif (reln_type == RELATION_R1) and (inp_taxon in self.Reln_R1_list):
+      self.Reln_R1_list.remove(inp_taxon)
+    elif (reln_type == RELATION_R4) and (inp_taxon in self.Reln_R4_list):
+      self.Reln_R4_list.remove(inp_taxon)
+    
+  def _RemoveRelnTaxon(self, inp_taxon):
+    for reln_type in range(4):
+      self._RemSelectedReln(reln_type, inp_taxon)
+      
+  def _GetRelnList(self, reln_type):
+    if (reln_type == RELATION_R3):
+      return self.Reln_R3_list
+    if (reln_type == RELATION_R1):
+      return self.Reln_R1_list
+    if (reln_type == RELATION_R2):
+      return self.Reln_R2_list
+    if (reln_type == RELATION_R4):
+      return self.Reln_R4_list
+    
   def _Get_Taxa_Part_Clust_Idx(self):
     return self.clust_idx_part
     
@@ -109,22 +185,147 @@ class Reln_TaxaPair(object):
     self.Connect_Edge_Cost = [0] * 4
     ''' this variable stores the number of extra lineages for the MRCA 
     node of this couplet, accumulated over all input trees '''
-    self.xl_sum_all_trees = 0
+    self.xl_sum_all_trees = []
     ''' this variable stores the no of trees supporting the taxa pair '''
     self.supporting_trees = 0
+    # this list contains the number of levels (tree branches) between individual couplets
+    # computed for all the gene trees
+    self.level_info_list = []
+    ## this list contains the accumulated sum of ranks of the internal nodes
+    ## present between individual couplets, for all the input trees
+    #self.accumulated_rank_list = []
+    # this list maintains the consensus relations for this couplet
+    # with respect to the input trees
+    self.consensus_reln_list = []
+    # this list contains the LCA ranks of the couplet
+    # with respect to individual gene trees
+    self.LCA_rank_list = []    
+
+  def _GetConsensusRelnList(self):
+    return self.consensus_reln_list
+
+  def _GetNoSupportTrees(self):
+    return self.supporting_trees
+
+  def _AddLevel(self, val):
+    self.level_info_list.append(val)
+
+  def _GetSumLevel(self):
+    return sum(self.level_info_list) 
+
+  def _GetAvgSumLevel(self):
+    return (sum(self.level_info_list) * 1.0) / self.supporting_trees
+    
+  def _GetMultiModeSumLevel(self):
+    candidate_score_sum = 0
+    candidate_freq_sum = 0
+    curr_arr = numpy.array(self.level_info_list)
+    # returns the counts of individual elements
+    # array size: max_elem + 1
+    counts = numpy.bincount(curr_arr)
+    # remove the zero values 
+    values = numpy.nonzero(counts)[0]
+    # mode value and corresponding frequency
+    mode_val = numpy.argmax(counts)
+    mode_count = numpy.max(counts)
+    # check for the values having frequency at least half of the maximum frequency
+    for v in values:
+      if (counts[v] >= 0.5 * mode_count):
+	candidate_score_sum = candidate_score_sum + (v * counts[v])
+	candidate_freq_sum = candidate_freq_sum + counts[v]
+    return (candidate_score_sum * 1.0) / candidate_freq_sum    
+    
+  # this function appends for one gene tree
+  # the coalescence rank value of the LCA node of this couplet
+  def _AddLCARank(self, val):
+    self.LCA_rank_list.append(val)
+    
+  # this returns the average LCA rank between this couplet
+  # over all gene trees        
+  def _GetAvgLCARank(self):
+    return (sum(self.LCA_rank_list) * 1.0) / self.supporting_trees
         
+  # this function checks the LCA rank list between this couplet
+  # and returns the average of those rank values
+  # which occurs at least half of the mode frequency value
+  def _GetMultiModeLCARank(self):
+    candidate_score_sum = 0
+    candidate_freq_sum = 0
+    curr_arr = numpy.array(self.LCA_rank_list)
+    # returns the counts of individual elements
+    # array size: max_elem + 1
+    counts = numpy.bincount(curr_arr)
+    # remove the zero values 
+    values = numpy.nonzero(counts)[0]
+    # mode value and corresponding frequency
+    mode_val = numpy.argmax(counts)
+    mode_count = numpy.max(counts)
+    # check for the values having frequency at least half of the maximum frequency
+    for v in values:
+      if (counts[v] >= 0.5 * mode_count):
+	candidate_score_sum = candidate_score_sum + (v * counts[v])
+	candidate_freq_sum = candidate_freq_sum + counts[v]
+    return (candidate_score_sum * 1.0) / candidate_freq_sum
+    
+  #def _AddAccumulatedRank(self, val):
+    #self.accumulated_rank_list.append(val)
+    
+  #def _GetAvgAccumulatedRank(self):
+    #return (sum(self.accumulated_rank_list) * 1.0) / self.tree_support_count
+             
+  #def _GetMultiModeAccumulatedRank(self):
+    #candidate_score_sum = 0
+    #candidate_freq_sum = 0
+    #curr_arr = numpy.array(self.accumulated_rank_list)
+    ## returns the counts of individual elements
+    ## array size: max_elem + 1
+    #counts = numpy.bincount(curr_arr)
+    ## remove the zero values 
+    #values = numpy.nonzero(counts)[0]
+    ## mode value and corresponding frequency
+    #mode_val = numpy.argmax(counts)
+    #mode_count = numpy.max(counts)
+    ## check for the values having frequency at least half of the maximum frequency
+    #for v in values:
+      #if (counts[v] >= 0.5 * mode_count):
+	#candidate_score_sum = candidate_score_sum + (v * counts[v])
+	#candidate_freq_sum = candidate_freq_sum + counts[v]
+    #return (candidate_score_sum * 1.0) / candidate_freq_sum    
+    
   def _AddLineage(self, val):
-    self.xl_sum_all_trees = self.xl_sum_all_trees + val
+    self.xl_sum_all_trees.append(val)
         
   def _AddSupportingTree(self):
     self.supporting_trees = self.supporting_trees + 1
     
+  def _GetSumXL(self):
+    return sum(self.xl_sum_all_trees)
+    
   def _GetAvgTreeXL(self):
-    return (self.xl_sum_all_trees * 1.0) / self.supporting_trees
-        
+    return (sum(self.xl_sum_all_trees) * 1.0) / self.supporting_trees
+  
+  def _GetMultiModeXL(self):
+    candidate_score_sum = 0
+    candidate_freq_sum = 0
+    curr_arr = numpy.array(self.xl_sum_all_trees)
+    # returns the counts of individual elements
+    # array size: max_elem + 1
+    counts = numpy.bincount(curr_arr)
+    # remove the zero values 
+    values = numpy.nonzero(counts)[0]
+    # mode value and corresponding frequency
+    mode_val = numpy.argmax(counts)
+    mode_count = numpy.max(counts)
+    # check for the values having frequency at least half of the maximum frequency
+    for v in values:
+      if (counts[v] >= 0.5 * mode_count):
+	candidate_score_sum = candidate_score_sum + (v * counts[v])
+	candidate_freq_sum = candidate_freq_sum + counts[v]
+    return (candidate_score_sum * 1.0) / candidate_freq_sum
+  
   def _GetEdgeWeight(self, edge_type):
     return self.edge_weight[edge_type]      
-    
+        
   def _GetEdgeCost_ConnReln(self, edge_type):
     return self.Connect_Edge_Cost[edge_type]
     
@@ -132,12 +333,12 @@ class Reln_TaxaPair(object):
     self.Connect_Edge_Cost[edge_type] = self.Connect_Edge_Cost[edge_type] + incr_cost
 
   # this function adds one edge count (with a given input edge type)
-  def _AddEdgeCount(self, edge_type, no_of_levels = 0):
+  def _AddEdgeCount(self, edge_type, TREE_WEIGHT_ASSIGNED, tr_idx):
     # increment the frequency of particular relation type between this taxa pair
-    if (no_of_levels == 0):    
+    if (TREE_WEIGHT_ASSIGNED == 0):    
       self.edge_weight[edge_type] = self.edge_weight[edge_type] + 1
     else:
-      self.edge_weight[edge_type] = self.edge_weight[edge_type] + no_of_levels
+      self.edge_weight[edge_type] = self.edge_weight[edge_type] + Matrix_Weight_Val[tr_idx]
         
   # this function prints the relationship information
   def _PrintRelnInfo(self, key, Output_Text_File):
@@ -145,7 +346,8 @@ class Reln_TaxaPair(object):
     fp.write('\n taxa pair key: ' + str(key))
     fp.write('\n edges [type/count/conn_pr_val]: ')
     for i in range(4):
-      fp.write('\n [' + str(i) + '/' + str(self.edge_weight[i]) + '/' + str(self.conn_pr_val[i]) + ']')
+      fp.write('\n [' + str(i) + '/' + str(self.edge_weight[i]) + '/' + str(self.conn_pr_val[i]) + ']')   
+    fp.write('\n consensus relation(s): ' + str(self.consensus_reln_list))
     #fp.write('\n final selected edge type : ' + str(self.final_selected_edge_type))
     fp.close()
     
@@ -154,10 +356,17 @@ class Reln_TaxaPair(object):
     for edge_type in range(4):
       # assign the score metric for this edge type
       self.Connect_Edge_Cost[edge_type] = self.edge_weight[edge_type] * self.conn_pr_val[edge_type]
+      #self.Connect_Edge_Cost[edge_type] = self.edge_weight[edge_type]
       
   ''' this function calculates connection priority value for each of the edge types, 
   for this particular connection between a pair of nodes in the final tree '''
   def _SetConnPrVal(self, single_edge_prior):
+    # find the consensus relations 
+    maxval = max(self.edge_weight)
+    for i in range(4):
+      if (self.edge_weight[i] == maxval):
+	self.consensus_reln_list.append(i) 
+    
     # this is the sum of all the edge type instances (no of occurrences)
     listsum = sum(self.edge_weight)
     # now determine the connection priority of a particular edge type with respect to other edges     
@@ -233,6 +442,10 @@ class Cluster_node(object):
   def _Append_taxa(self, inp_taxa):
     if inp_taxa not in self.Species_List:
       self.Species_List.append(inp_taxa)
+      
+  def _Remove_taxa(self, inp_taxa):
+    if inp_taxa in self.Species_List:
+      self.Species_List.remove(inp_taxa)    
   
   # it returns the final cluster node connectivity (tree shape) -- in edges
   def _Get_Indegree(self):
