@@ -75,19 +75,74 @@ def parse_options():
 			  help="1 - only a single max priority queue is used for storing the score metrics \
 			  2 - two separate queues are used to store the conflicting and non conflicting taxa pairs and corresponding score metrics (default)")
 
-  parser.add_option("-d", "--dfsref", \
+  parser.add_option("-t", "--treewt", \
+			  type="int", \
+			  action="store", \
+			  dest="tree_weight", \
+			  default=0, \
+			  help="0 - there is no separate weight assigned to individual phylogenetic trees \
+			  1 - input phylogenetic trees are assigned separate weights (default)")
+
+  parser.add_option("-d", "--dynscore", \
 			  action="store_false", \
-			  dest="dfs_parent_refine", \
+			  dest="dynamic_score", \
 			  default=True, \
-			  help="if TRUE, Multiple parent problem (C2) is tackled - before appying DFS for arbitrary parenting information, \
-			  it selects the most probable parent candidate. Default TRUE.")  
+			  help="if true, then this option dynamically updates support score values - Default TRUE")
 
   parser.add_option("-b", "--binary", \
-			  action="store_true", \
+			  action="store_false", \
 			  dest="binary_suptr", \
-			  default=False, \
+			  default=True, \
 			  help="if TRUE, it produces a strictly binary supertree. Otherwise, the tree can be non-binary. Default FALSE.")
 			    
+  parser.add_option("-u", "--underscore", \
+			  action="store_false", \
+			  dest="preserve_underscores", \
+			  default=True, \
+			  help="this is a boolean flag option \
+				using this option toggles the existing configuration (Default TRUE) \
+				if TRUE, then this option preserves the underscores of the names of taxa \
+				so, enabling this option do not preserve the underscores")  
+			    
+  parser.add_option("-n", "--njrule", \
+			  type="int", \
+			  action="store", \
+			  dest="NJ_type", \
+			  default=2, \
+			  help="valid only if binary supertree is produced \
+			  1 - classical NJ method (Default) \
+			  2 - Normalized couplet statistic for agglomeration")     
+			    
+  parser.add_option("-s", "--supportcoupletrule", \
+			  action="store_false", \
+			  dest="Support_Couplet_Check", \
+			  default=True, \
+			  help="this is a boolean flag option \
+			  valid only if binary supertree is produced \
+			  using this option toggles the existing configuration (Default TRUE) \
+			  if TRUE, then this option checks minimum XL entry for only supported couplets")  
+			    
+  parser.add_option("-m", "--metric", \
+			  type="int", \
+			  action="store", \
+			  dest="dist_metric", \
+			  default=1, \
+			  help="valid only if binary supertree is produced \
+			  1 - sum of extra taxa (XT) with respect to individual input trees \
+			  2 - Accumulated branch count measure (employed in NJ_st method) \
+			  3 - product of branch count and excess taxa \
+			  4 - product of LCA rank and excess taxa")
+			    
+  parser.add_option("-c", "--classavg", \
+			  type="int", \
+			  action="store", \
+			  dest="class_of_metric", \
+			  default=1, \
+			  help="valid only if binary supertree is produced \
+			  1 - absolute sum of metric value (either XT or Branch count) between couplets\
+			  2 - simple average of  metric value (either XT or Branch count) between couplets \
+			  3 - mode based average of metric value (either XT or Branch count) between couplets")     
+			
   opts, args = parser.parse_args()
   return opts, args
   
@@ -98,7 +153,7 @@ def main():
   opts, args = parse_options()
   
   ROOTED_TREE = False #opts.default_rooted
-  PRESERVE_UNDERSCORE = True #opts.preserve_underscores
+  PRESERVE_UNDERSCORE = opts.preserve_underscores
   if (opts.inp_file_format == 1):
     INPUT_FILE_FORMAT = 'newick'
   else:
@@ -106,10 +161,14 @@ def main():
   INPUT_FILENAME = opts.INP_FILENAME
   OUTPUT_FILENAME = opts.OUT_FILENAME
   NO_OF_QUEUES = opts.no_of_queues
-  DFS_PARENT_REFINE = opts.dfs_parent_refine
+  DFS_PARENT_REFINE = True #opts.dfs_parent_refine
   BINARY_SUPERTREE_OPTION = opts.binary_suptr
-  
-  global Output_Text_File
+  NJ_RULE_USED = opts.NJ_type
+  SUPPORT_COUPLET_CHECK = opts.Support_Couplet_Check
+  DIST_METRIC = opts.dist_metric
+  CLASS_OF_METRIC = opts.class_of_metric
+  TREE_WEIGHT_ASSIGNED = opts.tree_weight
+  DYNAMIC_SCORE_UPDATE = opts.dynamic_score
   
   if (INPUT_FILENAME == ""):
     print '******** THERE IS NO INPUT FILE SPECIFIED - RETURN **********'
@@ -139,10 +198,27 @@ def main():
       dir_of_curr_exec = dir_of_curr_exec + '_B_1'
     else:
       dir_of_curr_exec = dir_of_curr_exec + '_B_0'
-    if (DFS_PARENT_REFINE == True):
+
+    if (TREE_WEIGHT_ASSIGNED == True):
+      dir_of_curr_exec = dir_of_curr_exec + '_T_1'
+    else:
+      dir_of_curr_exec = dir_of_curr_exec + '_T_0'
+    
+    if (DYNAMIC_SCORE_UPDATE == True):
       dir_of_curr_exec = dir_of_curr_exec + '_D_1'
     else:
       dir_of_curr_exec = dir_of_curr_exec + '_D_0'
+        
+    # following options are used if binary supertree is produced
+    if (BINARY_SUPERTREE_OPTION == True):
+      dir_of_curr_exec = dir_of_curr_exec + '_N_' + str(NJ_RULE_USED)
+      if (SUPPORT_COUPLET_CHECK == True):
+	dir_of_curr_exec = dir_of_curr_exec + '_S_1'
+      else:
+	dir_of_curr_exec = dir_of_curr_exec + '_S_0'
+      dir_of_curr_exec = dir_of_curr_exec + '_M_' + str(DIST_METRIC)
+      dir_of_curr_exec = dir_of_curr_exec + '_C_' + str(CLASS_OF_METRIC)
+    
     # append the current output directory in the text file
     Output_Text_File = dir_of_curr_exec + '/' + 'COSPEDBTree_Complete_Desription.txt'
     # create the directory
@@ -161,7 +237,6 @@ def main():
   
   #-------------------------
   fp = open(Output_Text_File, 'w')    
-  
   #fp.write('\n ================ status of options ================= (1 means ON)')
   #fp.write('\n ROOTED_TREE: ' + str(ROOTED_TREE))
   #fp.write('\n PRESERVE_UNDERSCORE: ' + str(PRESERVE_UNDERSCORE))
@@ -194,43 +269,66 @@ def main():
     for i in range(len(taxa_labels_curr_tree)):
       if taxa_labels_curr_tree[i] not in COMPLETE_INPUT_TAXA_LIST:
 	COMPLETE_INPUT_TAXA_LIST.append(taxa_labels_curr_tree[i])
+    # add - sourya
+    if (TREE_WEIGHT_ASSIGNED == 1):
+      for i in range(len(taxa_labels_curr_tree) - 1):
+	for j in range(i+1, len(taxa_labels_curr_tree)):
+	  key1 = (taxa_labels_curr_tree[i], taxa_labels_curr_tree[j])
+	  key2 = (taxa_labels_curr_tree[j], taxa_labels_curr_tree[i])
+	  if key1 in TaxaPair_Reln_Dict:
+	    TaxaPair_Reln_Dict[key1]._AddSupportingTree()
+	  elif key2 in TaxaPair_Reln_Dict:
+	    TaxaPair_Reln_Dict[key2]._AddSupportingTree()
+	  else:
+	    TaxaPair_Reln_Dict.setdefault(key1, Reln_TaxaPair())
+	    TaxaPair_Reln_Dict[key1]._AddSupportingTree()
+    # end add - sourya
   
   # we also define one structure "Taxa_Info_Dict" marked by a taxa
   for label in COMPLETE_INPUT_TAXA_LIST:
     Taxa_Info_Dict.setdefault(label, Single_Taxa())
-  
+
+  # close the text file
+  fp.close()
+  #---------------------------------------------
+  if (TREE_WEIGHT_ASSIGNED == 1):
+    AssignMatrixWeights(Input_Treelist)
+    PrintMatrixWeights(Output_Text_File)
+    
   # now process individual trees to find the couplet relations of those trees
   for tr_idx in range(len(Input_Treelist)):
-    DeriveCoupletRelations(Input_Treelist[tr_idx])
+    DeriveCoupletRelations(Input_Treelist[tr_idx], tr_idx, TREE_WEIGHT_ASSIGNED, DYNAMIC_SCORE_UPDATE)
   
-  global number_of_taxa
-  number_of_taxa = len(COMPLETE_INPUT_TAXA_LIST)
-  
+  fp = open(Output_Text_File, 'a')    
   if (DEBUG_LEVEL > 0):
-    fp.write('\n  total no of taxa: ' + str(number_of_taxa))
+    fp.write('\n  total no of taxa: ' + str(len(COMPLETE_INPUT_TAXA_LIST)))
   if (DEBUG_LEVEL > 1):
     fp.write('\n len Taxa_Info_Dict: ' + str(len(Taxa_Info_Dict)))
     fp.write('\n len COMPLETE_INPUT_TAXA_LIST: ' + str(COMPLETE_INPUT_TAXA_LIST))
     fp.write('\n len TaxaPair_Reln_Dict : ' + str(len(TaxaPair_Reln_Dict)))
-  
   fp.close()
     
   data_read_timestamp = time.time()	# note the timestamp
-  
+    
   #------------------------------------------------------------
   ''' we also calculate the connection value between each pair of nodes in the output tree
   the value defines the majority of the edge type that is between those 2 nodes '''
   for l in TaxaPair_Reln_Dict:
-    ''' calculate the cost associated with each node pair connection for different edge types 
-    single_edge_exist means that only one type of edge connection is set between these two nodes '''
-    # detect if only one type of connection exists, during setting the priority values of different edge connections
+    """
+    calculate the consensus and priority measures associated with each couplet for different relations
+    single_edge_exist means that the couplet is non-conflicting
+    only one type of relation exists between them in the input trees
+    in such a case, include only that relation in the priority queue
+    """
     single_edge_exist_list = TaxaPair_Reln_Dict[l]._SetConnPrVal(True)
     single_edge_exist = single_edge_exist_list[0]
     edge_type = single_edge_exist_list[1]
 
-    """ we calculate the cost metric value between individual pairs of taxa
-    previously the cost metric was equal to the priority metric
-    now we change it to make it a product of the frequency and the priority metrics """
+    """ 
+    we calculate the support score value between individual couplets and for each relations
+    previously the support score value was equal to the priority metric
+    now we change it to make it a product of the frequency and the priority measures 
+    """
     TaxaPair_Reln_Dict[l]._SetCostMetric(l[0], l[1])
   
     #------------------------------------------------------------
@@ -255,7 +353,7 @@ def main():
 	Cost_List_Taxa_Pair_Single_Reln.append(sublist)
       else:
 	Cost_List_Taxa_Pair_Multi_Reln.append(sublist)
-  
+    #------------------------------------------------------------
   
   # we print the original connection status for all the tree nodes
   if (DEBUG_LEVEL > 2):
@@ -279,9 +377,9 @@ def main():
   this is a numpy 2D array 
   values Mat[x][y] = 1 means x->y
   Mat[x][y] = Mat[y][x] = 2 means x and y are connected via NO EDGE """
-  fp = open(Output_Text_File, 'a')
+  Reachability_Graph_Mat = numpy.zeros((len(COMPLETE_INPUT_TAXA_LIST), len(COMPLETE_INPUT_TAXA_LIST)), dtype=numpy.int)
   
-  Reachability_Graph_Mat = numpy.zeros((number_of_taxa, number_of_taxa), dtype=numpy.int)
+  fp = open(Output_Text_File, 'a')
   if (DEBUG_LEVEL > 0):
     fp.write('\n shape of Reachability_Graph_Mat: ' + str(numpy.shape(Reachability_Graph_Mat)))
   
@@ -296,10 +394,10 @@ def main():
   """ now we have to sort the Cost_List_Node_Pair according to the edge cost value 
   that is the 4th field of the sublist 
   we use custom sorting operation """
-  Sort_Cost_List_Initial(Cost_List_Taxa_Pair_Multi_Reln)
+  Sort_Priority_Queue(Cost_List_Taxa_Pair_Multi_Reln)
   # if there is provision to include single connectivity edges then we sort that list also
   if (NO_OF_QUEUES == 2):
-    Sort_Cost_List_Initial(Cost_List_Taxa_Pair_Single_Reln)
+    Sort_Priority_Queue(Cost_List_Taxa_Pair_Single_Reln)
   
   data_initialize_timestamp = time.time()	# note the timestamp
   
@@ -318,13 +416,11 @@ def main():
     PrintQueueInfo(Cost_List_Taxa_Pair_Multi_Reln, Output_Text_File)
     
   #------------------------------------------------------------
-  """ if we have stored taxa pairs depicting single relation instance 
-  then we first process that corresponding queue """
   if (NO_OF_QUEUES == 2):
-    Reachability_Graph_Mat = Proc_Queue(Reachability_Graph_Mat, 1, Output_Text_File)
+    Reachability_Graph_Mat = Proc_Queue(Reachability_Graph_Mat, 1, Output_Text_File, DYNAMIC_SCORE_UPDATE)
   
   """ then we process the queue containing the taxa pairs depicting multiple relation instance """
-  Reachability_Graph_Mat = Proc_Queue(Reachability_Graph_Mat, 0, Output_Text_File)
+  Reachability_Graph_Mat = Proc_Queue(Reachability_Graph_Mat, 0, Output_Text_File, DYNAMIC_SCORE_UPDATE)
   
   # we print the final connection status for all the tree nodes
   if (DEBUG_LEVEL > 2):
@@ -377,7 +473,29 @@ def main():
   # note the timestamp
   cluster_of_node_refine_species_timestamp1 = time.time()  
   
-  #----------------------------------------------
+  ##----------------------------------------------
+  ## add - sourya
+  #if (BINARY_SUPERTREE_OPTION == True):
+    #fp = open(Output_Text_File, 'a')
+    #fp.write('\n --- We first refine at cluster level - clusters containing species more than 2 will be divided')
+    #fp.close()
+  
+    #Refine_Clusters_Binary(Output_Text_File)
+
+    ## print the cluster information 
+    #if (DEBUG_LEVEL > 0):
+      #fp = open(Output_Text_File, 'a')
+      #fp.write('\n **** after modification of the clusters \n total number of clusters: ' + str(len(CURRENT_CLUST_IDX_LIST)))
+      #fp.write('\n CURRENT_CLUST_IDX_LIST contents: ')
+      #fp.write(str(CURRENT_CLUST_IDX_LIST))    
+      #fp.write('\n ========== cluster information after division of constituent taxa =============')
+      #fp.close()
+      #for i in Cluster_Info_Dict:
+	##print 'printing the information for cluster node: ', i
+	#Cluster_Info_Dict[i]._PrintClusterInfo(i, Output_Text_File)
+  
+  ## end add - sourya
+  ##----------------------------------------------
   ''' now this section constructs the supertree from the generated DAG 
   this is performed by repeatedly extracting the nodes with minimum indegree
   basically we first form a string which represents the supertree '''
@@ -407,24 +525,28 @@ def main():
   Supertree_Final = dendropy.Tree.get_from_string(Final_Supertree_Str, schema="newick")	#preserve_underscores=PRESERVE_UNDERSCORE, default_as_rooted=ROOTED_TREE)
   if 0:
     Supertree_Final.print_plot()  
+    
+  # note the timestamp
+  newick_str_formation_timestamp = time.time()  
   
   # add - sourya  
   if (BINARY_SUPERTREE_OPTION == True):
-    fp = open(Output_Text_File, 'a')
-    
     # ADD - SOURYA
     # we apply the update splits routine so as to remove any internal node with outdegree 1
     # this is required since during DAG based supertree formation, many internal nodes with one outdegree is created
     # this causes problem when binary refinement is employed
-    Supertree_Final.update_splits(delete_outdegree_one=True)
-    fp.write('\n --- after update splits --- output tree without branch length (in newick format): ' + Supertree_Final.as_newick_string())    
-    fp.write('\n --- user provided option for producing strict binary supertree')
-    fp.close()
-    # END ADD - SOURYA
+    #Supertree_Final.update_splits(delete_outdegree_one=True)
+    #fp.write('\n --- after update splits --- output tree without branch length (in newick format): ' + Supertree_Final.as_newick_string())    
     
+    ## add - sourya
+    ## we add the function to refine binary of supertree
+    #Refine_Latest_Supertree_Binary(Supertree_Final, Output_Text_File)
+    ## end add - sourya
+        
     # this function removes all multifurcating clusters and produces binary tree (except problem C3)
-    Refine_Supertree_Binary_Form(Supertree_Final, Output_Text_File)
+    Refine_Supertree_Binary_Form(Supertree_Final, NJ_RULE_USED, SUPPORT_COUPLET_CHECK, DIST_METRIC, CLASS_OF_METRIC, Output_Text_File)
     fp = open(Output_Text_File, 'a')
+    fp.write('\n --- user provided option for producing strict binary supertree')
     fp.write('\n --- after binary refinement --- output tree without branch length (in newick format): ' + Supertree_Final.as_newick_string())    
     fp.close()
   else:
@@ -450,13 +572,16 @@ def main():
   Supertree_Final.write_to_path(out_treefilename, 'newick')
   # end add - sourya
   
+  # read the tree from the file itself
+  Supertree_Final = dendropy.Tree.get_from_path(out_treefilename, schema='newick', preserve_underscores=PRESERVE_UNDERSCORE)
+  
   # final timestamp
   data_process_timestamp = time.time()      
     
   #----------------------------------------------
   # Performance metric code
   #----------------------------------------------
-  if 0:
+  if 1:
     # open the output text file
     fp = open(Output_Text_File, 'a')
     
@@ -467,9 +592,8 @@ def main():
     fp.write('\n \n\n total edges of supertree: ' + str(len(Supertree_Final.get_edge_set())))  
     
     #print 'taxon set of supertree: ', Supertree_Final.infer_taxa()
-    for tr_idx in range(len(Input_Treelist)):
-      # obtain the current source tree and its constituent taxa set
-      Curr_src_tree = Input_Treelist[tr_idx]
+    for inp_tree_idx in range(len(Input_Treelist)):
+      Curr_src_tree = Input_Treelist[inp_tree_idx]
       curr_src_tree_taxa = Curr_src_tree.infer_taxa().labels()
       curr_src_tree_no_of_taxa = len(curr_src_tree_taxa)
       
@@ -527,7 +651,8 @@ def main():
 	      str(reachability_graph_form_timestamp - data_initialize_timestamp) + \
 	'\n multiple parent (related) problem: ' + \
 	      str(cluster_of_node_refine_species_timestamp1 - reachability_graph_form_timestamp) + \
-	'\n newick string formation: ' + str(data_process_timestamp - cluster_of_node_refine_species_timestamp1))
+	'\n newick string formation: ' + str(newick_str_formation_timestamp - cluster_of_node_refine_species_timestamp1) + \
+	  '\n binary tree construction: ' + str(data_process_timestamp - newick_str_formation_timestamp))
 	
   fp.write('\n \n Total time taken (in seconds) : ' + str(data_process_timestamp - start_timestamp))
   
