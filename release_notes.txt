@@ -40,5 +40,24 @@ Addition of features
 2) Couplet based scores are dynamically updated according to the supertree created at each iteration.
 
 
+                                                        Version 0.3 (30 August 2015)
+                                                        -----------------------------
+
+1) Weighted frequency measure, computed using the coverage of taxa underlying the LCA of individual couplets
+this measure is now used as default
+2) Priority measure for a couplet is updated to be the ratio of frequencies
+3) We use number of queues as 1
+4) NJ based method for binary refinement of the unresolved supertree now has 4 different versions:
+    a) based on extra gene count between a couplet, computed for all the trees
+    b) sum of branches between a couplet, computed for all the trees
+    c) product of sum of branches and extra gene count
+    d) product of coalescence rank and extra gene count
+
+  In addition, we mention different computation of distance matrices (for NJ based refinement) according to the 
+sum of values, average of values, or mode of values.
+
+
+
+
 
 
