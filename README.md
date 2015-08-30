@@ -115,7 +115,9 @@ show this help message and exit
 
 			    			
 -w, --weighttaxa
-                    This boolean option (default TRUE) is used to assign fractional or weighted frequency measures for individual relations r1 to r4
+                    
+                    This boolean option (default TRUE) is used to assign fractional
+                     or weighted frequency measures for individual relations r1 to r4
                     instead of earlier defined static freqency of 1 for a satisfied relation.
                     User is adviced to keep this option to use dynamic frequency value.
                     
