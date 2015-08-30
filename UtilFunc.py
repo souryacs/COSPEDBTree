@@ -319,45 +319,36 @@ def DefineLeafPairReln(lca_node_rank, node1_rank, node2_rank, xl_val, sum_of_bra
   sum_acc_rank = sum_acc_rank + lca_node_rank  
   
   if key1 in TaxaPair_Reln_Dict:
-    #intersect_taxa_count = len(set(TaxaPair_Reln_Dict[key1]._GetUnderlyingTaxonList()) & set(curr_tree_taxa)) - 2
     if (len(taxa_under_curr_node) > 0):
       intersect_ratio = (len(set(TaxaPair_Reln_Dict[key1]._GetUnderlyingTaxonList()) & set(curr_tree_taxa)) * 1.0) / len(set(TaxaPair_Reln_Dict[key1]._GetUnderlyingTaxonList()))
     else:
       intersect_ratio = 1
-    intersect_ratio1 = 1	#(len(set(taxa_under_curr_node) & set(TaxaPair_Reln_Dict[key1]._GetUnderlyingTaxonList())) * 1.0) / len(set(TaxaPair_Reln_Dict[key1]._GetUnderlyingTaxonList()))    
     TaxaPair_Reln_Dict[key1]._AddSupportingTree()
     TaxaPair_Reln_Dict[key1]._AddLineage(xl_val)
     TaxaPair_Reln_Dict[key1]._AddEdgeCount(edge_type, intersect_ratio)
     TaxaPair_Reln_Dict[key1]._AddLevel(sum_of_branch_count)
     TaxaPair_Reln_Dict[key1]._AddAccumulatedRank(sum_acc_rank)
-    TaxaPair_Reln_Dict[key1]._AddLCARank(lca_node_rank)
   elif key2 in TaxaPair_Reln_Dict:
-    #intersect_taxa_count = len(set(TaxaPair_Reln_Dict[key2]._GetUnderlyingTaxonList()) & set(curr_tree_taxa)) - 2
     if (len(taxa_under_curr_node) > 0):
       intersect_ratio = (len(set(TaxaPair_Reln_Dict[key2]._GetUnderlyingTaxonList()) & set(curr_tree_taxa)) * 1.0)  / len(set(TaxaPair_Reln_Dict[key2]._GetUnderlyingTaxonList()))
     else:
       intersect_ratio = 1
-    intersect_ratio1 = 1	#(len(set(taxa_under_curr_node) & set(TaxaPair_Reln_Dict[key2]._GetUnderlyingTaxonList())) * 1.0) / len(set(TaxaPair_Reln_Dict[key2]._GetUnderlyingTaxonList()))    
     TaxaPair_Reln_Dict[key2]._AddSupportingTree()
     TaxaPair_Reln_Dict[key2]._AddLineage(xl_val)
     TaxaPair_Reln_Dict[key2]._AddEdgeCount(Complementary_Reln(edge_type), intersect_ratio)
     TaxaPair_Reln_Dict[key2]._AddLevel(sum_of_branch_count)
     TaxaPair_Reln_Dict[key2]._AddAccumulatedRank(sum_acc_rank)
-    TaxaPair_Reln_Dict[key2]._AddLCARank(lca_node_rank)
   else:
     TaxaPair_Reln_Dict.setdefault(key1, Reln_TaxaPair())
-    #intersect_taxa_count = len(set(TaxaPair_Reln_Dict[key1]._GetUnderlyingTaxonList()) & set(curr_tree_taxa)) - 2
     if (len(taxa_under_curr_node) > 0):
       intersect_ratio = (len(set(TaxaPair_Reln_Dict[key1]._GetUnderlyingTaxonList()) & set(curr_tree_taxa)) * 1.0)  / len(set(TaxaPair_Reln_Dict[key1]._GetUnderlyingTaxonList()))
     else:
       intersect_ratio = 1
-    intersect_ratio1 = 1	#(len(set(taxa_under_curr_node) & set(TaxaPair_Reln_Dict[key2]._GetUnderlyingTaxonList())) * 1.0) / len(set(TaxaPair_Reln_Dict[key2]._GetUnderlyingTaxonList()))    
     TaxaPair_Reln_Dict[key1]._AddSupportingTree()
     TaxaPair_Reln_Dict[key1]._AddLineage(xl_val)
     TaxaPair_Reln_Dict[key1]._AddEdgeCount(edge_type, intersect_ratio)
     TaxaPair_Reln_Dict[key1]._AddLevel(sum_of_branch_count)
     TaxaPair_Reln_Dict[key1]._AddAccumulatedRank(sum_acc_rank)
-    TaxaPair_Reln_Dict[key1]._AddLCARank(lca_node_rank)
       
   return
 

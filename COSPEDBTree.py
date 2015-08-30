@@ -67,33 +67,18 @@ def parse_options():
 			  help="1 - input file format is NEWICK (default) \
 			  2 - input file format is NEXUS")
   
-  parser.add_option("-q", "--queues", \
-			  type="int", \
-			  action="store", \
-			  dest="no_of_queues", \
-			  default=2, \
-			  help="1 - only a single max priority queue is used for storing the score metrics \
-			  2 - two separate queues are used to store the conflicting and non conflicting taxa pairs and corresponding score metrics (default)")
-
-  #parser.add_option("-d", "--dfsref", \
-			  #action="store_false", \
-			  #dest="dfs_parent_refine", \
-			  #default=True, \
-			  #help="if TRUE, Multiple parent problem (C2) is tackled - before appying DFS for arbitrary parenting information, \
-			  #it selects the most probable parent candidate. Default TRUE.")  
-
-  parser.add_option("-t", "--treewt", \
-			  type="int", \
-			  action="store", \
-			  dest="tree_weight", \
-			  default=1, \
-			  help="0 - there is no separate weight assigned to individual phylogenetic trees \
-			  1 - input phylogenetic trees are assigned separate weights (default)")
+  #parser.add_option("-q", "--queues", \
+			  #type="int", \
+			  #action="store", \
+			  #dest="no_of_queues", \
+			  #default=2, \
+			  #help="1 - only a single max priority queue is used for storing the score metrics \
+			  #2 - two separate queues are used to store the conflicting and non conflicting taxa pairs and corresponding score metrics (default)")
 
   parser.add_option("-b", "--binary", \
-			  action="store_false", \
+			  action="store_true", \
 			  dest="binary_suptr", \
-			  default=True, \
+			  default=False, \
 			  help="if TRUE, it produces a strictly binary supertree. Otherwise, the tree can be non-binary. Default FALSE.")
 			    
   parser.add_option("-u", "--underscore", \
@@ -113,16 +98,7 @@ def parse_options():
 			  help="valid only if binary supertree is produced \
 			  1 - classical NJ method (Default) \
 			  2 - Normalized couplet statistic for agglomeration")     
-			    
-  parser.add_option("-s", "--supportcoupletrule", \
-			  action="store_false", \
-			  dest="Support_Couplet_Check", \
-			  default=True, \
-			  help="this is a boolean flag option \
-			  valid only if binary supertree is produced \
-			  using this option toggles the existing configuration (Default TRUE) \
-			  if TRUE, then this option checks minimum XL entry for only supported couplets")  
-			    
+
   parser.add_option("-m", "--metric", \
 			  type="int", \
 			  action="store", \
@@ -130,20 +106,9 @@ def parse_options():
 			  default=1, \
 			  help="valid only if binary supertree is produced \
 			  1 - sum of extra taxa (XT) with respect to individual input trees \
-			  2 - Accumulated branch count measure (employed in NJ_st method) \
-			  3 - product of branch count and excess taxa \
-			  4 - product of Accumulated rank and excess taxa")
-			    
-  parser.add_option("-c", "--classavg", \
-			  type="int", \
-			  action="store", \
-			  dest="class_of_metric", \
-			  default=1, \
-			  help="valid only if binary supertree is produced \
-			  1 - absolute sum of metric value (either XT or Branch count) between couplets\
-			  2 - simple average of  metric value (either XT or Branch count) between couplets \
-			  3 - mode based average of metric value (either XT or Branch count) between couplets")     
-			
+			  2 - product of branch count and excess taxa \
+			  3 - product of Accumulated rank and excess taxa")
+
   parser.add_option("-w", "--weighttaxa", \
 			  action="store_false", \
 			  dest="weight_taxa_subset", \
@@ -169,13 +134,11 @@ def main():
     INPUT_FILE_FORMAT = 'nexus'
   INPUT_FILENAME = opts.INP_FILENAME
   OUTPUT_FILENAME = opts.OUT_FILENAME
-  NO_OF_QUEUES = opts.no_of_queues
+  NO_OF_QUEUES = 1	#opts.no_of_queues
   DFS_PARENT_REFINE = True #opts.dfs_parent_refine
   BINARY_SUPERTREE_OPTION = opts.binary_suptr
-  NJ_RULE_USED = opts.NJ_type
-  SUPPORT_COUPLET_CHECK = opts.Support_Couplet_Check
+  NJ_RULE_USED = opts.NJ_type 
   DIST_METRIC = opts.dist_metric
-  CLASS_OF_METRIC = opts.class_of_metric
   WEIGHT_TAXA_SUBSET = opts.weight_taxa_subset
   
   global Output_Text_File
@@ -217,12 +180,7 @@ def main():
     # following options are used if binary supertree is produced
     if (BINARY_SUPERTREE_OPTION == True):
       dir_of_curr_exec = dir_of_curr_exec + '_N_' + str(NJ_RULE_USED)
-      if (SUPPORT_COUPLET_CHECK == True):
-	dir_of_curr_exec = dir_of_curr_exec + '_S_1'
-      else:
-	dir_of_curr_exec = dir_of_curr_exec + '_S_0'
       dir_of_curr_exec = dir_of_curr_exec + '_M_' + str(DIST_METRIC)
-      dir_of_curr_exec = dir_of_curr_exec + '_C_' + str(CLASS_OF_METRIC)
     
     # append the current output directory in the text file
     Output_Text_File = dir_of_curr_exec + '/' + 'COSPEDBTree_Complete_Desription.txt'
@@ -239,6 +197,9 @@ def main():
     else:
       dir_of_curr_exec = OUTPUT_FILENAME[:(k+1)]
     Output_Text_File = dir_of_curr_exec + input_file_name + '_COSPEDBTree_Complete_Desription.txt'
+  
+  
+  print 'dir_of_curr_exec: ', dir_of_curr_exec  
   
   #-------------------------
   fp = open(Output_Text_File, 'w')    
@@ -472,28 +433,6 @@ def main():
   cluster_of_node_refine_species_timestamp1 = time.time()  
   
   ##----------------------------------------------
-  ## add - sourya
-  #if (BINARY_SUPERTREE_OPTION == True):
-    #fp = open(Output_Text_File, 'a')
-    #fp.write('\n --- We first refine at cluster level - clusters containing species more than 2 will be divided')
-    #fp.close()
-  
-    #Refine_Clusters_Binary(Output_Text_File)
-
-    ## print the cluster information 
-    #if (DEBUG_LEVEL > 0):
-      #fp = open(Output_Text_File, 'a')
-      #fp.write('\n **** after modification of the clusters \n total number of clusters: ' + str(len(CURRENT_CLUST_IDX_LIST)))
-      #fp.write('\n CURRENT_CLUST_IDX_LIST contents: ')
-      #fp.write(str(CURRENT_CLUST_IDX_LIST))    
-      #fp.write('\n ========== cluster information after division of constituent taxa =============')
-      #fp.close()
-      #for i in Cluster_Info_Dict:
-	##print 'printing the information for cluster node: ', i
-	#Cluster_Info_Dict[i]._PrintClusterInfo(i, Output_Text_File)
-  
-  ## end add - sourya
-  ##----------------------------------------------
   ''' now this section constructs the supertree from the generated DAG 
   this is performed by repeatedly extracting the nodes with minimum indegree
   basically we first form a string which represents the supertree '''
@@ -528,21 +467,9 @@ def main():
   newick_str_formation_timestamp = time.time()  
   
   # add - sourya  
-  if (BINARY_SUPERTREE_OPTION == True):
-    # ADD - SOURYA
-    # we apply the update splits routine so as to remove any internal node with outdegree 1
-    # this is required since during DAG based supertree formation, many internal nodes with one outdegree is created
-    # this causes problem when binary refinement is employed
-    #Supertree_Final.update_splits(delete_outdegree_one=True)
-    #fp.write('\n --- after update splits --- output tree without branch length (in newick format): ' + Supertree_Final.as_newick_string())    
-    
-    ## add - sourya
-    ## we add the function to refine binary of supertree
-    #Refine_Latest_Supertree_Binary(Supertree_Final, Output_Text_File)
-    ## end add - sourya
-        
+  if (BINARY_SUPERTREE_OPTION == True):    
     # this function removes all multifurcating clusters and produces binary tree (except problem C3)
-    Refine_Supertree_Binary_Form(Supertree_Final, NJ_RULE_USED, SUPPORT_COUPLET_CHECK, DIST_METRIC, CLASS_OF_METRIC, Output_Text_File)
+    Refine_Supertree_Binary_Form(Supertree_Final, NJ_RULE_USED, DIST_METRIC, Output_Text_File)
     fp = open(Output_Text_File, 'a')
     fp.write('\n --- user provided option for producing strict binary supertree')
     fp.write('\n --- after binary refinement --- output tree without branch length (in newick format): ' + Supertree_Final.as_newick_string())    
@@ -558,88 +485,14 @@ def main():
   else:
     out_treefilename = OUTPUT_FILENAME
   
-  ## comment - sourya
-  #outfile = open(out_treefilename, 'w')
-  #outfile.write(Supertree_Final.as_newick_string())
-  ##outfile.write('\n \n final tree \n \n')
-  ##outfile.write(Supertree_Final.as_ascii_plot())
-  #outfile.close()
-  ## end comment - sourya
-
-  # add - sourya
   Supertree_Final.write_to_path(out_treefilename, 'newick')
-  # end add - sourya
-  
+   
   # read the tree from the file itself
   Supertree_Final = dendropy.Tree.get_from_path(out_treefilename, schema='newick', preserve_underscores=PRESERVE_UNDERSCORE)
   
   # final timestamp
   data_process_timestamp = time.time()      
-  #----------------------------------------------
-  # Performance metric code
-  #----------------------------------------------
-  if 1:
-    # open the output text file
-    fp = open(Output_Text_File, 'a')
-    
-    # examine each of the source trees and find the FP, FN and RF distance with respect to the generated supertree  
-    sumFP = sumFN = sumRF = 0  
-    sumLenSrcTree = 0
-    sum_symmetric_diff = 0
-    fp.write('\n \n\n total edges of supertree: ' + str(len(Supertree_Final.get_edge_set())))  
-    
-    #print 'taxon set of supertree: ', Supertree_Final.infer_taxa()
-    for inp_tree_idx in range(len(Input_Treelist)):
-      Curr_src_tree = Input_Treelist[inp_tree_idx]
-      curr_src_tree_taxa = Curr_src_tree.infer_taxa().labels()
-      curr_src_tree_no_of_taxa = len(curr_src_tree_taxa)
-      
-      # according to the taxa set of the current source tree, 
-      # prune the supertree to get the tree portion containing only this taxa set
-      pruned_tree = dendropy.Tree(Supertree_Final)
-      pruned_tree.retain_taxa_with_labels(curr_src_tree_taxa)
-      
-      # source tree number of edges calculation
-      # it is used to compute normalized RF metric values
-      lenSrcTree = len(Curr_src_tree.get_edge_set())
-      sumLenSrcTree = sumLenSrcTree + lenSrcTree
-      fp.write('\n src tree : ' + str(Curr_src_tree))
-      fp.write('\n pruned supertree: ' + str(pruned_tree))
-      fp.write('\n src tree len: ' + str(lenSrcTree) + ' pruned supertree len: ' + str(len(pruned_tree.get_edge_set())))
-      
-      # determine the false positives and the false negatives 
-      tup = Curr_src_tree.false_positives_and_negatives(pruned_tree)
-      fp.write('   FP_int: ' + str(tup[0]) + '  FN_int:  ' + str(tup[1]))
-      sumFP = sumFP + tup[0]
-      sumFN = sumFN + tup[1]
-      sumRF = sumRF + ((tup[0] + tup[1]) / 2.0)
-      
-      symm_diff = Curr_src_tree.symmetric_difference(pruned_tree)
-      fp.write('   Symmetric difference: ' + str(symm_diff))
-      sum_symmetric_diff = sum_symmetric_diff + symm_diff
-	  
-    # final normalized sumFP's are computed by dividing with the number of trees
-    normsumFP = (sumFP * 1.0) / sumLenSrcTree
-    normsumFN = (sumFN * 1.0) / sumLenSrcTree
-    normsumRF = (sumRF * 1.0) / sumLenSrcTree
-    norm_symm_diff = sum_symmetric_diff / (2.0 * sumLenSrcTree)
-      
-    # print the final result
-    fp.write('\n\n\n ===============>>>>>>>>>>>>>>> FINAL RESULTS \n \n')
-    fp.write('\n ******* absolute sumFP: ' + str(sumFP) + \
-	    '\n ******* absolute sumFN: ' + str(sumFN) + \
-	    '\n ******* absolute sumRF: ' + str(sumRF) + \
-	    '\n ******* absolute Symmetric difference: ' + str(sum_symmetric_diff))
-    
-    fp.write('\n ===============>>>>>>>>>>>>>>> IN TERMS OF NORMALIZED \
-	    (DIVIDED BY THE SUM OF INTERNAL EDGES OF THE SOURCE TREES) ''')  
-    fp.write('\n normsumFP: ' + str(normsumFP) + '\n normsumFN: ' + str(normsumFN) + \
-      '\n normsumRF: ' + str(normsumRF) + '\n norm Symmetric Diff: ' + str(norm_symm_diff)) 
-    
-    fp.close()
-  #----------------------------------------------
-  # end Performance metric code
-  #----------------------------------------------
+  
   fp = open(Output_Text_File, 'a')  
   fp.write('\n \n\n ===============>>>>>>>>>>>>>>> TIME COMPLEXITY OF THE METHOD (in seconds) ')
   fp.write('\n \n reading the data: ' + str(data_read_timestamp - start_timestamp) + \
@@ -653,6 +506,72 @@ def main():
 	
   fp.write('\n \n Total time taken (in seconds) : ' + str(data_process_timestamp - start_timestamp))  
   fp.close()
+  
+  #----------------------------------------------
+  # Performance metric code
+  #----------------------------------------------
+  # open the output text file
+  outtextfile = dir_of_curr_exec + '/' + 'FP_FN_RF_Perf.txt'
+  fp = open(outtextfile, 'a')
+  
+  # examine each of the source trees and find the FP, FN and RF distance with respect to the generated supertree  
+  sumFP = sumFN = sumRF = 0  
+  sumLenSrcTree = 0
+  sum_symmetric_diff = 0
+  fp.write('\n \n\n total edges of supertree: ' + str(len(Supertree_Final.get_edge_set())))  
+  
+  #print 'taxon set of supertree: ', Supertree_Final.infer_taxa()
+  for inp_tree_idx in range(len(Input_Treelist)):
+    Curr_src_tree = Input_Treelist[inp_tree_idx]
+    curr_src_tree_taxa = Curr_src_tree.infer_taxa().labels()
+    curr_src_tree_no_of_taxa = len(curr_src_tree_taxa)
+    
+    # according to the taxa set of the current source tree, 
+    # prune the supertree to get the tree portion containing only this taxa set
+    pruned_tree = dendropy.Tree(Supertree_Final)
+    pruned_tree.retain_taxa_with_labels(curr_src_tree_taxa)
+    
+    # source tree number of edges calculation
+    # it is used to compute normalized RF metric values
+    lenSrcTree = len(Curr_src_tree.get_edge_set())
+    sumLenSrcTree = sumLenSrcTree + lenSrcTree
+    fp.write('\n src tree : ' + str(Curr_src_tree))
+    fp.write('\n pruned supertree: ' + str(pruned_tree))
+    fp.write('\n src tree len: ' + str(lenSrcTree) + ' pruned supertree len: ' + str(len(pruned_tree.get_edge_set())))
+    
+    # determine the false positives and the false negatives 
+    tup = Curr_src_tree.false_positives_and_negatives(pruned_tree)
+    fp.write('   FP_int: ' + str(tup[0]) + '  FN_int:  ' + str(tup[1]))
+    sumFP = sumFP + tup[0]
+    sumFN = sumFN + tup[1]
+    sumRF = sumRF + ((tup[0] + tup[1]) / 2.0)
+    
+    symm_diff = Curr_src_tree.symmetric_difference(pruned_tree)
+    fp.write('   Symmetric difference: ' + str(symm_diff))
+    sum_symmetric_diff = sum_symmetric_diff + symm_diff
+	
+  # final normalized sumFP's are computed by dividing with the number of trees
+  normsumFP = (sumFP * 1.0) / sumLenSrcTree
+  normsumFN = (sumFN * 1.0) / sumLenSrcTree
+  normsumRF = (sumRF * 1.0) / sumLenSrcTree
+  norm_symm_diff = sum_symmetric_diff / (2.0 * sumLenSrcTree)
+    
+  # print the final result
+  fp.write('\n\n\n ===============>>>>>>>>>>>>>>> FINAL RESULTS \n \n')
+  fp.write('\n ******* absolute sumFP: ' + str(sumFP) + \
+	  '\n ******* absolute sumFN: ' + str(sumFN) + \
+	  '\n ******* absolute sumRF: ' + str(sumRF) + \
+	  '\n ******* absolute Symmetric difference: ' + str(sum_symmetric_diff))
+  
+  fp.write('\n ===============>>>>>>>>>>>>>>> IN TERMS OF NORMALIZED \
+	  (DIVIDED BY THE SUM OF INTERNAL EDGES OF THE SOURCE TREES) ''')  
+  fp.write('\n normsumFP: ' + str(normsumFP) + '\n normsumFN: ' + str(normsumFN) + \
+    '\n normsumRF: ' + str(normsumRF) + '\n norm Symmetric Diff: ' + str(norm_symm_diff)) 
+  
+  fp.close()
+  #----------------------------------------------
+  # end Performance metric code
+  #----------------------------------------------
   #--------------------------------------------------------------  
   # delete the storage variables associated with the current execution 
   

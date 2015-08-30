@@ -25,14 +25,8 @@ AGGLO_CLUST = 2
 
 # variables used to denote the distance metric employed for agglomerative clustering
 EXTRA_TAXA = 1
-ACC_BRANCH_COUNT = 2
-PROD_EXTRA_TAXA_BRANCH_COUNT = 3
-PROD_EXTRA_TAXA_ACC_RANK = 4
-
-# class of distance metric values
-ABSOLUTE_SUM_METRIC_VAL = 1
-SIMPLE_AVG_METRIC_VAL = 2
-MODE_BASED_AVG_METRIC_VAL = 3
+PROD_EXTRA_TAXA_BRANCH_COUNT = 2
+PROD_EXTRA_TAXA_ACC_RANK = 3
 
 #---------------------------------------------
 """ this is a dictionary storing cluster of nodes 
@@ -134,9 +128,6 @@ class Reln_TaxaPair(object):
     # this list maintains the consensus relations for this couplet
     # with respect to the input trees
     self.consensus_reln_list = []
-    # this list contains the LCA ranks of the couplet
-    # with respect to individual gene trees
-    self.LCA_rank_list = []    
     # this list contains the union of taxa list underlying the LCA of this couplet
     # for individual input trees
     self.LCA_Underlying_Taxa_List = []
@@ -180,39 +171,7 @@ class Reln_TaxaPair(object):
 	candidate_score_sum = candidate_score_sum + (v * counts[v])
 	candidate_freq_sum = candidate_freq_sum + counts[v]
     return (candidate_score_sum * 1.0) / candidate_freq_sum    
-    
-  # this function appends for one gene tree
-  # the coalescence rank value of the LCA node of this couplet
-  def _AddLCARank(self, val):
-    self.LCA_rank_list.append(val)
-    
-  # this returns the average LCA rank between this couplet
-  # over all gene trees        
-  def _GetAvgLCARank(self):
-    return (sum(self.LCA_rank_list) * 1.0) / self.supporting_trees
         
-  # this function checks the LCA rank list between this couplet
-  # and returns the average of those rank values
-  # which occurs at least half of the mode frequency value
-  def _GetMultiModeLCARank(self):
-    candidate_score_sum = 0
-    candidate_freq_sum = 0
-    curr_arr = numpy.array(self.LCA_rank_list)
-    # returns the counts of individual elements
-    # array size: max_elem + 1
-    counts = numpy.bincount(curr_arr)
-    # remove the zero values 
-    values = numpy.nonzero(counts)[0]
-    # mode value and corresponding frequency
-    mode_val = numpy.argmax(counts)
-    mode_count = numpy.max(counts)
-    # check for the values having frequency at least half of the maximum frequency
-    for v in values:
-      if (counts[v] >= 0.5 * mode_count):
-	candidate_score_sum = candidate_score_sum + (v * counts[v])
-	candidate_freq_sum = candidate_freq_sum + counts[v]
-    return (candidate_score_sum * 1.0) / candidate_freq_sum
-    
   def _AddAccumulatedRank(self, val):
     self.accumulated_rank_list.append(val)
     
@@ -280,9 +239,7 @@ class Reln_TaxaPair(object):
 
   # this function adds one edge count (with a given input edge type)
   def _AddEdgeCount(self, edge_type, val=1):
-    """ 
-    increment the frequency of particular relation type between this taxa pair
-    """
+    #increment the frequency of particular relation type between this taxa pair
     self.edge_weight[edge_type] = self.edge_weight[edge_type] + val
         
   # this function prints the relationship information
@@ -293,7 +250,6 @@ class Reln_TaxaPair(object):
     for i in range(4):
       fp.write('\n [' + str(i) + '/' + str(self.edge_weight[i]) + '/' + str(self.conn_pr_val[i]) + ']')   
     fp.write('\n consensus relation(s): ' + str(self.consensus_reln_list))
-    #fp.write('\n final selected edge type : ' + str(self.final_selected_edge_type))
     fp.close()
     
   # this function computes the score metric value associated with individual pair of taxa 
