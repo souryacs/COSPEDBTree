@@ -1,0 +1,44 @@
+# COSPEDBTree
+Improved COSPEDTree (Couplet based supertree) with much lower running time, and option for binary supertree generation
+
+Release details
+-----------------
+
+                                                      Version 0.1 (17 June 2015)
+                                                      ----------------------------
+
+
+Contents
+----------
+
+1) Improved version of COSPEDTree with binary supertree generation, thus named as COSPEDBTree. 
+It supports both non-binary and strict binary supertree.
+
+2) Fastest among existing supertree approaches, with highly efficient supertree construction compared to the basic COSPEDTree approach. 
+The performance (in terms of RF metrics) is kept identical for non-binary trees, between the earlier COSPEDTree and this package COSPEDBTree.
+
+
+Future works
+------------
+
+1) For strict binary supertrees, as the source trees often are not complete binary, comparison leads to high number of false positive (FP) instances. We need to selectively make the tree binary (i.e. allow for some unresolved non-binary subtree in the supertree).
+2) The code needs to be updated in terms of the comments, and names of few functions and variables.
+3) The code needs to support Python 3.
+4) The code needs to support Dendropy 4.0 (latest version).
+5) The code needs to support execution on Windows XP and MacOS.
+
+
+
+
+
+                                                        Version 0.2 (25 August 2015)
+                                                        -----------------------------
+
+Addition of features
+---------------------
+1) Updated binarization (of unresolved supertree) with NJ and extra gene count based resolving
+2) Couplet based scores are dynamically updated according to the supertree created at each iteration.
+
+
+
+
