@@ -72,11 +72,13 @@ Details of the options are mentioned below:
 show this help message and exit
 
 -I INP_FILENAME, --INPFILE=INP_FILENAME 
+
                 name of the input file containing candidate source trees (a text file) 
                 USER MUST PROVIDE ONE VALID
                 INPUT FILE CONTAINING THE TREE DATA OTHERWISE PROGRAM WILL BREAK FROM EXECUTION
 
 -O OUT_FILENAME, --OUTFILE=OUT_FILENAME
+
                 name of the output file which will contain the target supertree
 
 -p INP_FILE_FORMAT, --inpform=INP_FILE_FORMAT
@@ -85,52 +87,32 @@ show this help message and exit
                     2 - input file format is NEXUS       
                     USER MUST PROVIDE either p = 1 or 2
 
--q NO_OF_QUEUES, --queues=NO_OF_QUEUES
-                    1 - only a single max priority queue is used for
-                    storing the score metrics (default)                      
-                    2 - two separate queues are used to store the conflicting
-                    and non conflicting taxa pairs and corresponding score metrics 
-
 -b, --binary
-                    if TRUE, it produces a strictly binary supertree.
-                    Otherwise, the tree can be non-binary. Default TRUE.
 
--t, --treewt
-                    if 1, input phylogenetic trees are assigned separate weights. Default is 0.
+                    if TRUE, it produces a strictly binary supertree.
+                    Otherwise, the tree can be non-binary. Default FALSE.
 
 -u, --underscore
+
                     this is a boolean flag option. if TRUE, then this option preserves the underscores of the names of taxa. 
                     So, enabling this option does not preserve the underscores. This is a Dendropy related option.
   
 -n, --njrule
+
                     This option is used only if binary supertree is produced. 
                     User is adviced to not alter this option.
                       1 - classical NJ method (Default).
                       2 - Normalized couplet statistic for agglomeration (Default)
                     
--s, --supportcoupletrule
-                    This option is valid only if binary supertree is produced. 
-                    User is adviced to not alter this option. The option is default TRUE.
-                    if TRUE, then this option checks only supported couplets (present in at least one tree)
-                    for the proposed NJ based agglomerative clustering.
-
 -m, --metric
 
                     This option is valid only if binary supertree is produced.
                     This value defines different types of methods for the proposed NJ based agglomeration.
                     Values can be any of the following:
                       1 - sum of extra taxa (XT) with respect to individual input trees (default)
-                      2 - Accumulated branch count measure (employed in NJ_st method)
-                      3 - product of branch count and excess taxa
-                      4 - product of Accumulated rank and excess taxa.
+                      2 - product of branch count and excess taxa
+                      3 - product of Accumulated rank and excess taxa.
 
--c, --classavg
-
-                    This option is valid only if binary supertree is produced. 
-                    It is used along with the above mentioned metric values 1 and 2.
-                    1 - absolute sum of metric value (either XT or Branch count) between couplets.
-                    2 - simple average of  metric value (either XT or Branch count) between couplets (default).
-                    3 - mode based average of metric value (either XT or Branch count) between couplets
 			    			
 -w, --weighttaxa
                     This boolean option (default TRUE) is used to assign fractional or weighted frequency measures for individual relations r1 to r4
@@ -140,7 +122,7 @@ show this help message and exit
 
 Example of a command (followed for the results published in the manuscript)
 
-./COSPEDBTree -I source_tree_input.txt -p1 > out.txt
+./COSPEDBTree -I source_tree_input.txt -p1 -b > out.txt
 
 command descriptions: 
 
@@ -149,17 +131,22 @@ command descriptions:
   2) source_tree_input.txt : contains the input collection of trees 
   
   3) -p option is for specifying the input tree format input file contains the trees in NEWICK format, as specified by the option (-p1) (1 stands for newick)
+
+  4) -b option produces a binary supertree with default NJ based method and default distance matrix construction approach.
   
 
 The output tree and all the results are printed at console. User can redirect the output results to any standard text file by using standard redirection operation (>). For example, in the above command, all the detailed results (textual descriptions) are redirected to file out.txt.
 
 In addition, one output file "output_supertree_newick.tre" is created in the current directory it contains the derived supertree information (in both newick string format as well as tree plot). The tree can be used subsequently for performance metric computation 
 
+We also add one additional file 'FP_FN_RF_Perf.txt' in that directory, which contains the FP, FN, and RF metric values 
+for the output tree with respect to individual source trees.
+
 
 Complexities
 -----------
 
-COSPEDTree requires O(N^3 + MN^2) time and O(N^2) space complexity, for N input taxa and M input trees. 
+COSPEDBTree requires O(N^3 + MN^2) time and O(N^2) space complexity, for N input taxa and M input trees. 
 If weighted freqency (using -w option) is used, the storage complexity is increased to O(N^3).
 
 Citation
