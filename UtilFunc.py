@@ -301,52 +301,42 @@ def Append_Cluster_Taxa_Label(target_clust_idx, target_taxa_label):
 #--------------------------------------------------------
 # this function defines relationship between a pair of nodes in a tree
 # the relationship is either ancestor / descendant, or siblings, or no relationship 
-def DefineLeafPairReln(lca_node_rank, node1_rank, node2_rank, xl_val, sum_of_branch_count, \
-	node1, node2, edge_type, curr_tree_taxa, taxa_under_curr_node):
+def DefineLeafPairReln(xl_val, node1, node2, reln_type, curr_tree_taxa, wt_taxa_subset):
 
 	key1 = (node1.taxon.label, node2.taxon.label)
 	key2 = (node2.taxon.label, node1.taxon.label)
 
-	# derive the accumulated rank information
-	sum_acc_rank = 0
-	if (node1_rank < lca_node_rank):
-		sum_acc_rank = sum_acc_rank + (((lca_node_rank - node1_rank) * (lca_node_rank + node1_rank - 1)) / 2)
-	if (node2_rank < lca_node_rank):
-		sum_acc_rank = sum_acc_rank + (((lca_node_rank - node2_rank) * (lca_node_rank + node2_rank - 1)) / 2)
-	# add the rank of the LCA node
-	sum_acc_rank = sum_acc_rank + lca_node_rank  
-
 	if key1 in TaxaPair_Reln_Dict:
-		if (len(taxa_under_curr_node) > 0):
-			intersect_ratio = (len(set(TaxaPair_Reln_Dict[key1]._GetUnderlyingTaxonList()) & set(curr_tree_taxa)) * 1.0) / len(set(TaxaPair_Reln_Dict[key1]._GetUnderlyingTaxonList()))
+		if (wt_taxa_subset == True):
+			und_tax_list = TaxaPair_Reln_Dict[key1]._GetUnderlyingTaxonList()
+			len_und_tax_list = len(und_tax_list)
+			intersect_ratio = (len(set(und_tax_list) & set(curr_tree_taxa)) * 1.0) / len_und_tax_list
 		else:
 			intersect_ratio = 1
 		TaxaPair_Reln_Dict[key1]._AddSupportingTree()
-		TaxaPair_Reln_Dict[key1]._AddLineage(xl_val / intersect_ratio)	# add - sourya
-		TaxaPair_Reln_Dict[key1]._AddEdgeCount(edge_type, intersect_ratio)
-		TaxaPair_Reln_Dict[key1]._AddLevel(sum_of_branch_count)
-		TaxaPair_Reln_Dict[key1]._AddAccumulatedRank(sum_acc_rank)
+		TaxaPair_Reln_Dict[key1]._AddLineage(xl_val / intersect_ratio)
+		TaxaPair_Reln_Dict[key1]._AddEdgeCount(reln_type, intersect_ratio)
 	elif key2 in TaxaPair_Reln_Dict:
-		if (len(taxa_under_curr_node) > 0):
-			intersect_ratio = (len(set(TaxaPair_Reln_Dict[key2]._GetUnderlyingTaxonList()) & set(curr_tree_taxa)) * 1.0)  / len(set(TaxaPair_Reln_Dict[key2]._GetUnderlyingTaxonList()))
+		if (wt_taxa_subset == True):
+			und_tax_list = TaxaPair_Reln_Dict[key2]._GetUnderlyingTaxonList()
+			len_und_tax_list = len(und_tax_list)
+			intersect_ratio = (len(set(und_tax_list) & set(curr_tree_taxa)) * 1.0) / len_und_tax_list
 		else:
 			intersect_ratio = 1
 		TaxaPair_Reln_Dict[key2]._AddSupportingTree()
-		TaxaPair_Reln_Dict[key2]._AddLineage(xl_val / intersect_ratio)	# add - sourya
-		TaxaPair_Reln_Dict[key2]._AddEdgeCount(Complementary_Reln(edge_type), intersect_ratio)
-		TaxaPair_Reln_Dict[key2]._AddLevel(sum_of_branch_count)
-		TaxaPair_Reln_Dict[key2]._AddAccumulatedRank(sum_acc_rank)
+		TaxaPair_Reln_Dict[key2]._AddLineage(xl_val / intersect_ratio)
+		TaxaPair_Reln_Dict[key2]._AddEdgeCount(Complementary_Reln(reln_type), intersect_ratio)
 	else:
 		TaxaPair_Reln_Dict.setdefault(key1, Reln_TaxaPair())
-		if (len(taxa_under_curr_node) > 0):
-			intersect_ratio = (len(set(TaxaPair_Reln_Dict[key1]._GetUnderlyingTaxonList()) & set(curr_tree_taxa)) * 1.0)  / len(set(TaxaPair_Reln_Dict[key1]._GetUnderlyingTaxonList()))
+		if (wt_taxa_subset == True):
+			und_tax_list = TaxaPair_Reln_Dict[key1]._GetUnderlyingTaxonList()
+			len_und_tax_list = len(und_tax_list)
+			intersect_ratio = (len(set(und_tax_list) & set(curr_tree_taxa)) * 1.0) / len_und_tax_list
 		else:
 			intersect_ratio = 1
 		TaxaPair_Reln_Dict[key1]._AddSupportingTree()
-		TaxaPair_Reln_Dict[key1]._AddLineage(xl_val / intersect_ratio)	# add - sourya
-		TaxaPair_Reln_Dict[key1]._AddEdgeCount(edge_type, intersect_ratio)
-		TaxaPair_Reln_Dict[key1]._AddLevel(sum_of_branch_count)
-		TaxaPair_Reln_Dict[key1]._AddAccumulatedRank(sum_acc_rank)
+		TaxaPair_Reln_Dict[key1]._AddLineage(xl_val / intersect_ratio)
+		TaxaPair_Reln_Dict[key1]._AddEdgeCount(reln_type, intersect_ratio)
 			
 	return
 
@@ -360,11 +350,6 @@ def DeriveCoupletRelations(Curr_tree, WEIGHT_TAXA_SUBSET):
 
 	# traverse the internal nodes of the tree in postorder fashion
 	for curr_node in Curr_tree.postorder_internal_node_iter():
-		if (WEIGHT_TAXA_SUBSET == True):
-			taxa_under_curr_node = GetTaxaUnderInternalNode(curr_node)
-		else:
-			taxa_under_curr_node = []
-		
 		# compute the XL value associated with this node    
 		if (WEIGHT_TAXA_SUBSET == True):
 			xl_val = (len(curr_node.leaf_nodes()) - 2)
@@ -372,9 +357,6 @@ def DeriveCoupletRelations(Curr_tree, WEIGHT_TAXA_SUBSET):
 			# this is the normalized value of extra lineage with respect to the subtree rooted under current node
 			# when we divide this absolute value with respect to the number of taxa of the current tree
 			xl_val = ((len(curr_node.leaf_nodes()) - 2) * 1.0) / no_of_taxa
-		
-		curr_node_level = curr_node.level()
-		curr_node_rank = no_of_taxa - curr_node_level
 		
 		# list the leaf and internal children of the current node
 		curr_node_child_leaf_nodes = []
@@ -389,11 +371,7 @@ def DeriveCoupletRelations(Curr_tree, WEIGHT_TAXA_SUBSET):
 		if (len(curr_node_child_leaf_nodes) > 1):
 			for i in range(len(curr_node_child_leaf_nodes) - 1):
 				for j in range(i+1, len(curr_node_child_leaf_nodes)):
-					node1_rank = no_of_taxa - curr_node_child_leaf_nodes[i].parent_node.level()
-					node2_rank = no_of_taxa - curr_node_child_leaf_nodes[j].parent_node.level()	  
-					sum_of_branch_count = ((curr_node_child_leaf_nodes[i].level() - curr_node_level) + (curr_node_child_leaf_nodes[j].level() - curr_node_level))
-					DefineLeafPairReln(curr_node_rank, node1_rank, node2_rank, xl_val, sum_of_branch_count, \
-						curr_node_child_leaf_nodes[i], curr_node_child_leaf_nodes[j], RELATION_R3, curr_tree_taxa, taxa_under_curr_node)
+					DefineLeafPairReln(xl_val, curr_node_child_leaf_nodes[i], curr_node_child_leaf_nodes[j], RELATION_R3, curr_tree_taxa, WEIGHT_TAXA_SUBSET)
 		
 		# one leaf node (direct descendant) and another leaf node (under one internal node)
 		# will be related by ancestor / descendant relations
@@ -401,11 +379,7 @@ def DeriveCoupletRelations(Curr_tree, WEIGHT_TAXA_SUBSET):
 			for p in curr_node_child_leaf_nodes:
 				for q in curr_node_child_internal_nodes:
 					for r in q.leaf_nodes():
-						node1_rank = no_of_taxa - p.parent_node.level()
-						node2_rank = no_of_taxa - r.parent_node.level()	    
-						sum_of_branch_count = ((p.level() - curr_node_level) + (r.level() - curr_node_level))
-						DefineLeafPairReln(curr_node_rank, node1_rank, node2_rank, xl_val, sum_of_branch_count, \
-							p, r, RELATION_R1, curr_tree_taxa, taxa_under_curr_node)
+						DefineLeafPairReln(xl_val, p, r, RELATION_R1, curr_tree_taxa, WEIGHT_TAXA_SUBSET)
 		
 		# finally a pair of leaf nodes which are descendant of internal nodes will be related by RELATION_R4 relation
 		if (len(curr_node_child_internal_nodes) > 1):
@@ -413,11 +387,7 @@ def DeriveCoupletRelations(Curr_tree, WEIGHT_TAXA_SUBSET):
 				for j in range(i+1, len(curr_node_child_internal_nodes)):
 					for p in curr_node_child_internal_nodes[i].leaf_nodes():
 						for q in curr_node_child_internal_nodes[j].leaf_nodes():
-							node1_rank = no_of_taxa - p.parent_node.level()
-							node2_rank = no_of_taxa - q.parent_node.level()      
-							sum_of_branch_count = ((p.level() - curr_node_level) + (q.level() - curr_node_level))
-							DefineLeafPairReln(curr_node_rank, node1_rank, node2_rank, xl_val, sum_of_branch_count, \
-								p, q, RELATION_R4, curr_tree_taxa, taxa_under_curr_node)
+							DefineLeafPairReln(xl_val, p, q, RELATION_R4, curr_tree_taxa, WEIGHT_TAXA_SUBSET)
 
 #--------------------------------------------------------
 # this function derives coupket relations belonging to one tree
@@ -438,8 +408,8 @@ def FindCoupletUnderlyingTaxon(Curr_tree):
 		# pair of leaf nodes will be related by sibling relations
 		if (len(curr_node_child_leaf_nodes) > 1):
 			for i in range(len(curr_node_child_leaf_nodes) - 1):
+				node1 = curr_node_child_leaf_nodes[i]
 				for j in range(i+1, len(curr_node_child_leaf_nodes)):
-					node1 = curr_node_child_leaf_nodes[i]
 					node2 = curr_node_child_leaf_nodes[j]
 					key1 = (node1.taxon.label, node2.taxon.label)
 					key2 = (node2.taxon.label, node1.taxon.label)
@@ -455,9 +425,9 @@ def FindCoupletUnderlyingTaxon(Curr_tree):
 		# will be related by ancestor / descendant relations
 		if (len(curr_node_child_leaf_nodes) > 0) and (len(curr_node_child_internal_nodes) > 0):
 			for p in curr_node_child_leaf_nodes:
+				node1 = p
 				for q in curr_node_child_internal_nodes:
 					for r in q.leaf_nodes():
-						node1 = p
 						node2 = r
 						key1 = (node1.taxon.label, node2.taxon.label)
 						key2 = (node2.taxon.label, node1.taxon.label)
@@ -474,8 +444,8 @@ def FindCoupletUnderlyingTaxon(Curr_tree):
 			for i in range(len(curr_node_child_internal_nodes) - 1):
 				for j in range(i+1, len(curr_node_child_internal_nodes)):
 					for p in curr_node_child_internal_nodes[i].leaf_nodes():
+						node1 = p
 						for q in curr_node_child_internal_nodes[j].leaf_nodes():
-							node1 = p
 							node2 = q
 							key1 = (node1.taxon.label, node2.taxon.label)
 							key2 = (node2.taxon.label, node1.taxon.label)

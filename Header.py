@@ -111,15 +111,9 @@ class Reln_TaxaPair(object):
 		self.xl_sum_all_trees = []
 		''' this variable stores the no of trees supporting the taxa pair '''
 		self.supporting_trees = 0
-		# this list contains the number of levels (tree branches) between individual couplets
-		# computed for all the gene trees
-		self.level_info_list = []
-		# this list contains the accumulated sum of ranks of the internal nodes
-		# present between individual couplets, for all the input trees
-		self.accumulated_rank_list = []
-		# this list maintains the consensus relations for this couplet
-		# with respect to the input trees
-		self.consensus_reln_list = []
+		## this list maintains the consensus relations for this couplet
+		## with respect to the input trees
+		#self.consensus_reln_list = []
 		# this list contains the union of taxa list underlying the LCA of this couplet
 		# for individual input trees
 		self.LCA_Underlying_Taxa_List = []
@@ -130,64 +124,11 @@ class Reln_TaxaPair(object):
 	def _GetUnderlyingTaxonList(self):
 		return self.LCA_Underlying_Taxa_List
 
-	def _GetConsensusRelnList(self):
-		return self.consensus_reln_list
+	#def _GetConsensusRelnList(self):
+		#return self.consensus_reln_list
 
 	def _GetNoSupportTrees(self):
 		return self.supporting_trees
-
-	def _AddLevel(self, val):
-		self.level_info_list.append(val)
-
-	def _GetSumLevel(self):
-		return sum(self.level_info_list) 
-
-	def _GetAvgSumLevel(self):
-		return (sum(self.level_info_list) * 1.0) / self.supporting_trees
-		
-	def _GetMultiModeSumLevel(self):
-		candidate_score_sum = 0
-		candidate_freq_sum = 0
-		curr_arr = numpy.array(self.level_info_list)
-		# returns the counts of individual elements
-		# array size: max_elem + 1
-		counts = numpy.bincount(curr_arr)
-		# remove the zero values 
-		values = numpy.nonzero(counts)[0]
-		# mode value and corresponding frequency
-		mode_val = numpy.argmax(counts)
-		mode_count = numpy.max(counts)
-		# check for the values having frequency at least half of the maximum frequency
-		for v in values:
-			if (counts[v] >= 0.5 * mode_count):
-				candidate_score_sum = candidate_score_sum + (v * counts[v])
-				candidate_freq_sum = candidate_freq_sum + counts[v]
-		return (candidate_score_sum * 1.0) / candidate_freq_sum    
-				
-	def _AddAccumulatedRank(self, val):
-		self.accumulated_rank_list.append(val)
-		
-	def _GetAvgAccumulatedRank(self):
-		return (sum(self.accumulated_rank_list) * 1.0) / self.tree_support_count
-							
-	def _GetMultiModeAccumulatedRank(self):
-		candidate_score_sum = 0
-		candidate_freq_sum = 0
-		curr_arr = numpy.array(self.accumulated_rank_list)
-		# returns the counts of individual elements
-		# array size: max_elem + 1
-		counts = numpy.bincount(curr_arr)
-		# remove the zero values 
-		values = numpy.nonzero(counts)[0]
-		# mode value and corresponding frequency
-		mode_val = numpy.argmax(counts)
-		mode_count = numpy.max(counts)
-		# check for the values having frequency at least half of the maximum frequency
-		for v in values:
-			if (counts[v] >= 0.5 * mode_count):
-				candidate_score_sum = candidate_score_sum + (v * counts[v])
-				candidate_freq_sum = candidate_freq_sum + counts[v]
-		return (candidate_score_sum * 1.0) / candidate_freq_sum    
 		
 	def _AddLineage(self, val):
 		self.xl_sum_all_trees.append(val)
@@ -200,25 +141,6 @@ class Reln_TaxaPair(object):
 		
 	def _GetAvgTreeXL(self):
 		return (sum(self.xl_sum_all_trees) * 1.0) / self.supporting_trees
-
-	def _GetMultiModeXL(self):
-		candidate_score_sum = 0
-		candidate_freq_sum = 0
-		curr_arr = numpy.array(self.xl_sum_all_trees)
-		# returns the counts of individual elements
-		# array size: max_elem + 1
-		counts = numpy.bincount(curr_arr)
-		# remove the zero values 
-		values = numpy.nonzero(counts)[0]
-		# mode value and corresponding frequency
-		mode_val = numpy.argmax(counts)
-		mode_count = numpy.max(counts)
-		# check for the values having frequency at least half of the maximum frequency
-		for v in values:
-			if (counts[v] >= 0.5 * mode_count):
-				candidate_score_sum = candidate_score_sum + (v * counts[v])
-				candidate_freq_sum = candidate_freq_sum + counts[v]
-		return (candidate_score_sum * 1.0) / candidate_freq_sum
 
 	def _GetEdgeWeight(self, edge_type):
 		return self.edge_weight[edge_type]      
@@ -253,11 +175,11 @@ class Reln_TaxaPair(object):
 	''' this function calculates connection priority value for each of the edge types, 
 	for this particular connection between a pair of nodes in the final tree '''
 	def _SetConnPrVal(self, single_edge_prior, weighted_priority):
-		# find the consensus relations 
-		maxval = max(self.edge_weight)
-		for i in range(4):
-			if (self.edge_weight[i] == maxval):
-				self.consensus_reln_list.append(i) 
+		## find the consensus relations 
+		#maxval = max(self.edge_weight)
+		#for i in range(4):
+			#if (self.edge_weight[i] == maxval):
+				#self.consensus_reln_list.append(i) 
 		
 		# this is the sum of all the edge type instances (no of occurrences)
 		listsum = sum(self.edge_weight)

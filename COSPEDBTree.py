@@ -99,16 +99,6 @@ def parse_options():
 				1 - classical NJ method (Default) \
 				2 - Normalized couplet statistic for agglomeration")     
 
-	parser.add_option("-m", "--metric", \
-				type="int", \
-				action="store", \
-				dest="dist_metric", \
-				default=1, \
-				help="valid only if binary supertree is produced \
-				1 - sum of extra taxa (XT) with respect to individual input trees \
-				2 - product of branch count and excess taxa \
-				3 - product of Accumulated rank and excess taxa")
-
 	parser.add_option("-w", "--weighttaxa", \
 				action="store_false", \
 				dest="weight_taxa_subset", \
@@ -139,7 +129,6 @@ def main():
 	DFS_PARENT_REFINE = True #opts.dfs_parent_refine
 	BINARY_SUPERTREE_OPTION = opts.binary_suptr
 	NJ_RULE_USED = opts.NJ_type 
-	DIST_METRIC = opts.dist_metric
 	WEIGHT_TAXA_SUBSET = opts.weight_taxa_subset
 
 	if (INPUT_FILENAME == ""):
@@ -179,7 +168,6 @@ def main():
 		# following options are used if binary supertree is produced
 		if (BINARY_SUPERTREE_OPTION == True):
 			dir_of_curr_exec = dir_of_curr_exec + '_N_' + str(NJ_RULE_USED)
-			dir_of_curr_exec = dir_of_curr_exec + '_M_' + str(DIST_METRIC)
 		
 		# append the current output directory in the text file
 		Output_Text_File = dir_of_curr_exec + '/' + 'COSPEDBTree_Complete_Desription.txt'
@@ -232,28 +220,40 @@ def main():
 
 	number_of_taxa = len(COMPLETE_INPUT_TAXA_LIST)  
 
+	if (DEBUG_LEVEL >= 0):
+		fp.write('\n  total no of taxa: ' + str(number_of_taxa))
+		fp.write('\n  total no of trees: ' + str(len(Input_Treelist)))
+
 	# we also define one structure "Taxa_Info_Dict" marked by a taxa
 	for label in COMPLETE_INPUT_TAXA_LIST:
 		Taxa_Info_Dict.setdefault(label, Single_Taxa())
 
-	# close the text file
-	fp.close()
+	data_read_timestamp1 = time.time()	# note the timestamp
+
+	if (DEBUG_LEVEL >= 0):
+		fp.write('\n Time taken to read the taxa information: ' + str(data_read_timestamp1 - start_timestamp))
 		
 	#---------------------------
 	# add - sourya
 	if (WEIGHT_TAXA_SUBSET == True):
 		for tr_idx in range(len(Input_Treelist)):
 			FindCoupletUnderlyingTaxon(Input_Treelist[tr_idx])
+			
+	data_read_timestamp2 = time.time()	# note the timestamp
+	
+	if (DEBUG_LEVEL >= 0):
+		fp.write('\n Time taken to compute the underlying taxon for weight computation: ' + str(data_read_timestamp2 - data_read_timestamp1))
 	# end add - sourya
 	#---------------------------
-
 	# now process individual trees to find the couplet relations of those trees
 	for tr_idx in range(len(Input_Treelist)):
 		DeriveCoupletRelations(Input_Treelist[tr_idx], WEIGHT_TAXA_SUBSET)
 
-	fp = open(Output_Text_File, 'a')    
-	if (DEBUG_LEVEL > 0):
-		fp.write('\n  total no of taxa: ' + str(number_of_taxa))
+	data_read_timestamp3 = time.time()	# note the timestamp
+	
+	if (DEBUG_LEVEL >= 0):
+		fp.write('\n Time taken to read the couplet relations: ' + str(data_read_timestamp3 - data_read_timestamp2))
+	
 	if (DEBUG_LEVEL > 1):
 		fp.write('\n len Taxa_Info_Dict: ' + str(len(Taxa_Info_Dict)))
 		fp.write('\n len COMPLETE_INPUT_TAXA_LIST: ' + str(COMPLETE_INPUT_TAXA_LIST))
@@ -473,7 +473,7 @@ def main():
 	# add - sourya  
 	if (BINARY_SUPERTREE_OPTION == True):    
 		# this function removes all multifurcating clusters and produces binary tree (except problem C3)
-		Refine_Supertree_Binary_Form(Supertree_Final, NJ_RULE_USED, DIST_METRIC, Output_Text_File)
+		Refine_Supertree_Binary_Form(Supertree_Final, NJ_RULE_USED, Output_Text_File)
 		fp = open(Output_Text_File, 'a')
 		fp.write('\n --- user provided option for producing strict binary supertree')
 		fp.write('\n --- after binary refinement --- output tree without branch length (in newick format): ' + Supertree_Final.as_newick_string())    
