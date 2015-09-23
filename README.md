@@ -89,6 +89,7 @@ show this help message and exit
 
 -b, --binary
 
+                     This is a boolean flag option. Specifying this option toggles the default configuration.
                     if TRUE, it produces a strictly binary supertree.
                     Otherwise, the tree can be non-binary. Default FALSE.
 
@@ -97,14 +98,14 @@ show this help message and exit
                     this is a boolean flag option. if TRUE, then this option preserves the underscores of the names of taxa. 
                     So, enabling this option does not preserve the underscores. This is a Dendropy related option.
   
--n, --njrule
+-n val, --njrule=val
 
                     This option is used only if binary supertree is produced. 
                     User is adviced to not alter this option.
-                      1 - classical NJ method (Default).
+                      1 - classical NJ method.
                       2 - Normalized couplet statistic for agglomeration (Default)
                     
--m, --metric
+-m val, --metric=val
 
                     This option is valid only if binary supertree is produced.
                     This value defines different types of methods for the proposed NJ based agglomeration.
@@ -112,19 +113,18 @@ show this help message and exit
                       1 - sum of extra taxa (XT) with respect to individual input trees (default)
                       2 - product of branch count and excess taxa
                       3 - product of Accumulated rank and excess taxa.
-
-			    			
+    			
 -w, --weighttaxa
-                    
-                    This boolean option (default TRUE) is used to assign fractional
-                     or weighted frequency measures for individual relations r1 to r4
+
+                    This boolean option (default TRUE) is used to assign fractional 
+                    or weighted frequency measures for individual relations r1 to r4
                     instead of earlier defined static freqency of 1 for a satisfied relation.
-                    User is adviced to keep this option to use dynamic frequency value.
+                    User is adviced to keep this option to use dynamic (weighted) frequency value.
                     
 
 Example of a command (followed for the results published in the manuscript)
 
-./COSPEDBTree -I source_tree_input.txt -p1 -b > out.txt
+./COSPEDBTree -I source_tree_input.txt -p1 > out.txt
 
 command descriptions: 
 
@@ -132,9 +132,8 @@ command descriptions:
   
   2) source_tree_input.txt : contains the input collection of trees 
   
-  3) -p option is for specifying the input tree format input file contains the trees in NEWICK format, as specified by the option (-p1) (1 stands for newick)
-
-  4) -b option produces a binary supertree with default NJ based method and default distance matrix construction approach.
+  3) -p option is for specifying the input tree format input file contains the trees in NEWICK format, 
+  as specified by the option (-p1) (1 stands for newick)
   
 
 The output tree and all the results are printed at console. User can redirect the output results to any standard text file by using standard redirection operation (>). For example, in the above command, all the detailed results (textual descriptions) are redirected to file out.txt.
@@ -156,7 +155,7 @@ Citation
 
 Upon using this package, users need to cite the following articles:
 
-1) Sourya Bhattacharyya, and Jayanta Mukherjee, "COSPEDTree: COuplet Supertree by Equivalence Partitioning of taxa set and DAG formation", IEEE/ACM Transactions on Computational Biology and Bioinformatics, pp. 1-1, doi: http://doi.ieeecomputersociety.org/10.1109/TCBB.2014.2366778
+1) Sourya Bhattacharyya, and Jayanta Mukherjee, "COSPEDTree: COuplet Supertree by Equivalence Partitioning of taxa set and DAG formation", IEEE/ACM Transactions on Computational Biology and Bioinformatics, Vol 12, No 3, pp. 590-603.
 
 2) Sourya Bhattacharyya, and Jayanta Mukhopadhyay, "COuplet Supertree by Equivalence Partitioning of taxa set and DAG formation", Proceedings of the 5th ACM Conference on Bioinformatics, Computational Biology and Health Informatics (ACM-BCB), Newport, California, September 2014, pages 259-268.
 
