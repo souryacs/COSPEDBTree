@@ -4,28 +4,21 @@ import Header
 from Header import *
 import UtilFunc
 from UtilFunc import *
-
-#------------------------------------------------------
-""" this function sorts the input list containing the costs of different relations between individual taxa pairs
-we don't use python standard sort routine
-rather we use sorting giving different weightage to different edge types, in case of identical cost values """
-def Sort_Cost_List_Initial(Cost_List_Node_Pair):
-  Sort_Priority_Queue(Cost_List_Node_Pair)
   
 #------------------------------------------------------
 """ this code section implements the max priority queue """
 #------------------------------------------------------
 # parent node of current node
 def Parent(idx):
-  return int((idx-1) / 2)
+	return int((idx-1) / 2)
 
 # left child node of current node  
 def Left(idx):
-  return (2*idx+1)
+	return (2*idx+1)
 
 # right child node of current node
 def Right(idx):
-  return (2*idx+2)
+	return (2*idx+2)
   
 #------------------------------------------------------------------------
 # version 4
@@ -100,172 +93,172 @@ def Lower_Score_Value(inp_queue, i, j):
   return 0
 """
 #------------------------------------------------------------------------
-
+"""
 def Resolve_R4_and_R4(inp_queue, i, j):
-  key_i = (inp_queue[i][0], inp_queue[i][1])
-  reln_i = inp_queue[i][2]
-  key_j = (inp_queue[j][0], inp_queue[j][1])
-  reln_j = inp_queue[j][2]
-  
-  # first we prioritize the consensus relation
-  if (reln_i in TaxaPair_Reln_Dict[key_i]._GetConsensusRelnList()) and (reln_j not in TaxaPair_Reln_Dict[key_j]._GetConsensusRelnList()):
-    return i
-  elif (reln_i not in TaxaPair_Reln_Dict[key_i]._GetConsensusRelnList()) and (reln_j in TaxaPair_Reln_Dict[key_j]._GetConsensusRelnList()):
-    return j
-  # next we prioritize the relation with higher frequency
-  elif (TaxaPair_Reln_Dict[key_i]._GetEdgeWeight(reln_i) < TaxaPair_Reln_Dict[key_j]._GetEdgeWeight(reln_j)):
-    return j
-  elif (TaxaPair_Reln_Dict[key_i]._GetEdgeWeight(reln_i) > TaxaPair_Reln_Dict[key_j]._GetEdgeWeight(reln_j)):
-    return i
-  # next we prioritize the relation with higher priority
-  elif (TaxaPair_Reln_Dict[key_i]._GetConnPrVal(reln_i) < TaxaPair_Reln_Dict[key_j]._GetConnPrVal(reln_j)):
-    return j
-  elif (TaxaPair_Reln_Dict[key_i]._GetConnPrVal(reln_i) > TaxaPair_Reln_Dict[key_j]._GetConnPrVal(reln_j)):
-    return i  
-  # last, we select the relation with high sum of XL
-  elif (TaxaPair_Reln_Dict[key_i]._GetAvgTreeXL() < TaxaPair_Reln_Dict[key_j]._GetAvgTreeXL()):
-    return j
-  else:
-    return i
+	key_i = (inp_queue[i][0], inp_queue[i][1])
+	reln_i = inp_queue[i][2]
+	key_j = (inp_queue[j][0], inp_queue[j][1])
+	reln_j = inp_queue[j][2]
+
+	# first we prioritize the consensus relation
+	if (reln_i in TaxaPair_Reln_Dict[key_i]._GetConsensusRelnList()) and (reln_j not in TaxaPair_Reln_Dict[key_j]._GetConsensusRelnList()):
+		return i
+	elif (reln_i not in TaxaPair_Reln_Dict[key_i]._GetConsensusRelnList()) and (reln_j in TaxaPair_Reln_Dict[key_j]._GetConsensusRelnList()):
+		return j
+	# next we prioritize the relation with higher frequency
+	elif (TaxaPair_Reln_Dict[key_i]._GetEdgeWeight(reln_i) < TaxaPair_Reln_Dict[key_j]._GetEdgeWeight(reln_j)):
+		return j
+	elif (TaxaPair_Reln_Dict[key_i]._GetEdgeWeight(reln_i) > TaxaPair_Reln_Dict[key_j]._GetEdgeWeight(reln_j)):
+		return i
+	# next we prioritize the relation with higher priority
+	elif (TaxaPair_Reln_Dict[key_i]._GetConnPrVal(reln_i) < TaxaPair_Reln_Dict[key_j]._GetConnPrVal(reln_j)):
+		return j
+	elif (TaxaPair_Reln_Dict[key_i]._GetConnPrVal(reln_i) > TaxaPair_Reln_Dict[key_j]._GetConnPrVal(reln_j)):
+		return i  
+	# last, we select the relation with high sum of XL
+	elif (TaxaPair_Reln_Dict[key_i]._GetAvgTreeXL() < TaxaPair_Reln_Dict[key_j]._GetAvgTreeXL()):
+		return j
+	else:
+		return i
 
 def Resolve_R4_and_R3(inp_queue, i, j):
-  key_i = (inp_queue[i][0], inp_queue[i][1])
-  reln_i = inp_queue[i][2]
-  key_j = (inp_queue[j][0], inp_queue[j][1])
-  reln_j = inp_queue[j][2]
-  
-  # first we prioritize the consensus relation
-  if (reln_i in TaxaPair_Reln_Dict[key_i]._GetConsensusRelnList()) and (reln_j not in TaxaPair_Reln_Dict[key_j]._GetConsensusRelnList()):
-    return i
-  elif (reln_i not in TaxaPair_Reln_Dict[key_i]._GetConsensusRelnList()) and (reln_j in TaxaPair_Reln_Dict[key_j]._GetConsensusRelnList()):
-    return j
-  # next we prioritize the relation with higher frequency
-  elif (TaxaPair_Reln_Dict[key_i]._GetEdgeWeight(reln_i) < TaxaPair_Reln_Dict[key_j]._GetEdgeWeight(reln_j)):
-    return j
-  elif (TaxaPair_Reln_Dict[key_i]._GetEdgeWeight(reln_i) > TaxaPair_Reln_Dict[key_j]._GetEdgeWeight(reln_j)):
-    return i 
-  # next we prioritize the relation with higher priority
-  elif (TaxaPair_Reln_Dict[key_i]._GetConnPrVal(reln_i) < TaxaPair_Reln_Dict[key_j]._GetConnPrVal(reln_j)):
-    return j
-  elif (TaxaPair_Reln_Dict[key_i]._GetConnPrVal(reln_i) > TaxaPair_Reln_Dict[key_j]._GetConnPrVal(reln_j)):
-    return i  
-  else:	#if (inp_queue[i][0] == inp_queue[j][0]) and (inp_queue[i][1] == inp_queue[j][1]):
-    # same couplets - prioritize R4
-    return i
-  #else:
-    ## for different couplet, prioritize R3
-    #return j
+	key_i = (inp_queue[i][0], inp_queue[i][1])
+	reln_i = inp_queue[i][2]
+	key_j = (inp_queue[j][0], inp_queue[j][1])
+	reln_j = inp_queue[j][2]
+
+	# first we prioritize the consensus relation
+	if (reln_i in TaxaPair_Reln_Dict[key_i]._GetConsensusRelnList()) and (reln_j not in TaxaPair_Reln_Dict[key_j]._GetConsensusRelnList()):
+		return i
+	elif (reln_i not in TaxaPair_Reln_Dict[key_i]._GetConsensusRelnList()) and (reln_j in TaxaPair_Reln_Dict[key_j]._GetConsensusRelnList()):
+		return j
+	# next we prioritize the relation with higher frequency
+	elif (TaxaPair_Reln_Dict[key_i]._GetEdgeWeight(reln_i) < TaxaPair_Reln_Dict[key_j]._GetEdgeWeight(reln_j)):
+		return j
+	elif (TaxaPair_Reln_Dict[key_i]._GetEdgeWeight(reln_i) > TaxaPair_Reln_Dict[key_j]._GetEdgeWeight(reln_j)):
+		return i 
+	# next we prioritize the relation with higher priority
+	elif (TaxaPair_Reln_Dict[key_i]._GetConnPrVal(reln_i) < TaxaPair_Reln_Dict[key_j]._GetConnPrVal(reln_j)):
+		return j
+	elif (TaxaPair_Reln_Dict[key_i]._GetConnPrVal(reln_i) > TaxaPair_Reln_Dict[key_j]._GetConnPrVal(reln_j)):
+		return i  
+	else:	#if (inp_queue[i][0] == inp_queue[j][0]) and (inp_queue[i][1] == inp_queue[j][1]):
+		# same couplets - prioritize R4
+		return i
+	#else:
+		## for different couplet, prioritize R3
+		#return j
 
 def Resolve_R4_and_R1_R2(inp_queue, i, j):
-  key_i = (inp_queue[i][0], inp_queue[i][1])
-  reln_i = inp_queue[i][2]
-  key_j = (inp_queue[j][0], inp_queue[j][1])
-  reln_j = inp_queue[j][2]
+	key_i = (inp_queue[i][0], inp_queue[i][1])
+	reln_i = inp_queue[i][2]
+	key_j = (inp_queue[j][0], inp_queue[j][1])
+	reln_j = inp_queue[j][2]
 
-  # first we prioritize the consensus relation
-  if (reln_i in TaxaPair_Reln_Dict[key_i]._GetConsensusRelnList()) and (reln_j not in TaxaPair_Reln_Dict[key_j]._GetConsensusRelnList()):
-    return i
-  elif (reln_i not in TaxaPair_Reln_Dict[key_i]._GetConsensusRelnList()) and (reln_j in TaxaPair_Reln_Dict[key_j]._GetConsensusRelnList()):
-    return j
-  # next we prioritize the relation with higher frequency  
-  elif (TaxaPair_Reln_Dict[key_i]._GetEdgeWeight(reln_i) < TaxaPair_Reln_Dict[key_j]._GetEdgeWeight(reln_j)):
-    return j
-  elif (TaxaPair_Reln_Dict[key_i]._GetEdgeWeight(reln_i) > TaxaPair_Reln_Dict[key_j]._GetEdgeWeight(reln_j)):
-    return i
-  # next we prioritize the relation with higher priority
-  elif (TaxaPair_Reln_Dict[key_i]._GetConnPrVal(reln_i) < TaxaPair_Reln_Dict[key_j]._GetConnPrVal(reln_j)):
-    return j
-  elif (TaxaPair_Reln_Dict[key_i]._GetConnPrVal(reln_i) > TaxaPair_Reln_Dict[key_j]._GetConnPrVal(reln_j)):
-    return i  
-  elif (inp_queue[i][0] == inp_queue[j][0]) and (inp_queue[i][1] == inp_queue[j][1]):
-    # same couplets - prioritize R4
-    return i
-  else:
-    ## for different couplets, prioritize R1 / R2 relation
-    #return j
-    # last, we select the relation with high sum of XL
-    if (TaxaPair_Reln_Dict[key_i]._GetAvgTreeXL() < TaxaPair_Reln_Dict[key_j]._GetAvgTreeXL()):
-      return j
-    else:
-      return i
+	# first we prioritize the consensus relation
+	if (reln_i in TaxaPair_Reln_Dict[key_i]._GetConsensusRelnList()) and (reln_j not in TaxaPair_Reln_Dict[key_j]._GetConsensusRelnList()):
+		return i
+	elif (reln_i not in TaxaPair_Reln_Dict[key_i]._GetConsensusRelnList()) and (reln_j in TaxaPair_Reln_Dict[key_j]._GetConsensusRelnList()):
+		return j
+	# next we prioritize the relation with higher frequency  
+	elif (TaxaPair_Reln_Dict[key_i]._GetEdgeWeight(reln_i) < TaxaPair_Reln_Dict[key_j]._GetEdgeWeight(reln_j)):
+		return j
+	elif (TaxaPair_Reln_Dict[key_i]._GetEdgeWeight(reln_i) > TaxaPair_Reln_Dict[key_j]._GetEdgeWeight(reln_j)):
+		return i
+	# next we prioritize the relation with higher priority
+	elif (TaxaPair_Reln_Dict[key_i]._GetConnPrVal(reln_i) < TaxaPair_Reln_Dict[key_j]._GetConnPrVal(reln_j)):
+		return j
+	elif (TaxaPair_Reln_Dict[key_i]._GetConnPrVal(reln_i) > TaxaPair_Reln_Dict[key_j]._GetConnPrVal(reln_j)):
+		return i  
+	elif (inp_queue[i][0] == inp_queue[j][0]) and (inp_queue[i][1] == inp_queue[j][1]):
+		# same couplets - prioritize R4
+		return i
+	else:
+		## for different couplets, prioritize R1 / R2 relation
+		#return j
+		# last, we select the relation with high sum of XL
+		if (TaxaPair_Reln_Dict[key_i]._GetAvgTreeXL() < TaxaPair_Reln_Dict[key_j]._GetAvgTreeXL()):
+			return j
+		else:
+			return i
   
 def Resolve_R3_and_R1_R2(inp_queue, i, j):
-  key_i = (inp_queue[i][0], inp_queue[i][1])
-  reln_i = inp_queue[i][2]
-  key_j = (inp_queue[j][0], inp_queue[j][1])
-  reln_j = inp_queue[j][2]
-  
-  # first we prioritize the consensus relation
-  if (reln_i in TaxaPair_Reln_Dict[key_i]._GetConsensusRelnList()) and (reln_j not in TaxaPair_Reln_Dict[key_j]._GetConsensusRelnList()):
-    return i
-  elif (reln_i not in TaxaPair_Reln_Dict[key_i]._GetConsensusRelnList()) and (reln_j in TaxaPair_Reln_Dict[key_j]._GetConsensusRelnList()):
-    return j
-  # next we prioritize the relation with higher frequency    
-  elif (TaxaPair_Reln_Dict[key_i]._GetEdgeWeight(reln_i) < TaxaPair_Reln_Dict[key_j]._GetEdgeWeight(reln_j)):
-    return j
-  elif (TaxaPair_Reln_Dict[key_i]._GetEdgeWeight(reln_i) > TaxaPair_Reln_Dict[key_j]._GetEdgeWeight(reln_j)):
-    return i 
-  # next we prioritize the relation with higher priority
-  elif (TaxaPair_Reln_Dict[key_i]._GetConnPrVal(reln_i) < TaxaPair_Reln_Dict[key_j]._GetConnPrVal(reln_j)):
-    return j
-  elif (TaxaPair_Reln_Dict[key_i]._GetConnPrVal(reln_i) > TaxaPair_Reln_Dict[key_j]._GetConnPrVal(reln_j)):
-    return i
-  
-  # R3 is set to low priority
-  return j  
+	key_i = (inp_queue[i][0], inp_queue[i][1])
+	reln_i = inp_queue[i][2]
+	key_j = (inp_queue[j][0], inp_queue[j][1])
+	reln_j = inp_queue[j][2]
+
+	# first we prioritize the consensus relation
+	if (reln_i in TaxaPair_Reln_Dict[key_i]._GetConsensusRelnList()) and (reln_j not in TaxaPair_Reln_Dict[key_j]._GetConsensusRelnList()):
+		return i
+	elif (reln_i not in TaxaPair_Reln_Dict[key_i]._GetConsensusRelnList()) and (reln_j in TaxaPair_Reln_Dict[key_j]._GetConsensusRelnList()):
+		return j
+	# next we prioritize the relation with higher frequency    
+	elif (TaxaPair_Reln_Dict[key_i]._GetEdgeWeight(reln_i) < TaxaPair_Reln_Dict[key_j]._GetEdgeWeight(reln_j)):
+		return j
+	elif (TaxaPair_Reln_Dict[key_i]._GetEdgeWeight(reln_i) > TaxaPair_Reln_Dict[key_j]._GetEdgeWeight(reln_j)):
+		return i 
+	# next we prioritize the relation with higher priority
+	elif (TaxaPair_Reln_Dict[key_i]._GetConnPrVal(reln_i) < TaxaPair_Reln_Dict[key_j]._GetConnPrVal(reln_j)):
+		return j
+	elif (TaxaPair_Reln_Dict[key_i]._GetConnPrVal(reln_i) > TaxaPair_Reln_Dict[key_j]._GetConnPrVal(reln_j)):
+		return i
+
+	# R3 is set to low priority
+	return j  
 
 def Resolve_R3_and_R3(inp_queue, i, j):
-  key_i = (inp_queue[i][0], inp_queue[i][1])
-  reln_i = inp_queue[i][2]
-  key_j = (inp_queue[j][0], inp_queue[j][1])
-  reln_j = inp_queue[j][2]
-  
-  # first we prioritize the consensus relation
-  if (reln_i in TaxaPair_Reln_Dict[key_i]._GetConsensusRelnList()) and (reln_j not in TaxaPair_Reln_Dict[key_j]._GetConsensusRelnList()):
-    return i
-  elif (reln_i not in TaxaPair_Reln_Dict[key_i]._GetConsensusRelnList()) and (reln_j in TaxaPair_Reln_Dict[key_j]._GetConsensusRelnList()):
-    return j
-  # next we prioritize the relation with higher frequency    
-  elif (TaxaPair_Reln_Dict[key_i]._GetEdgeWeight(reln_i) < TaxaPair_Reln_Dict[key_j]._GetEdgeWeight(reln_j)):
-    return j
-  elif (TaxaPair_Reln_Dict[key_i]._GetEdgeWeight(reln_i) > TaxaPair_Reln_Dict[key_j]._GetEdgeWeight(reln_j)):
-    return i 
-  # next we prioritize the relation with higher priority
-  elif (TaxaPair_Reln_Dict[key_i]._GetConnPrVal(reln_i) < TaxaPair_Reln_Dict[key_j]._GetConnPrVal(reln_j)):
-    return j
-  elif (TaxaPair_Reln_Dict[key_i]._GetConnPrVal(reln_i) > TaxaPair_Reln_Dict[key_j]._GetConnPrVal(reln_j)):
-    return i    
-  
-  return i
+	key_i = (inp_queue[i][0], inp_queue[i][1])
+	reln_i = inp_queue[i][2]
+	key_j = (inp_queue[j][0], inp_queue[j][1])
+	reln_j = inp_queue[j][2]
+
+	# first we prioritize the consensus relation
+	if (reln_i in TaxaPair_Reln_Dict[key_i]._GetConsensusRelnList()) and (reln_j not in TaxaPair_Reln_Dict[key_j]._GetConsensusRelnList()):
+		return i
+	elif (reln_i not in TaxaPair_Reln_Dict[key_i]._GetConsensusRelnList()) and (reln_j in TaxaPair_Reln_Dict[key_j]._GetConsensusRelnList()):
+		return j
+	# next we prioritize the relation with higher frequency    
+	elif (TaxaPair_Reln_Dict[key_i]._GetEdgeWeight(reln_i) < TaxaPair_Reln_Dict[key_j]._GetEdgeWeight(reln_j)):
+		return j
+	elif (TaxaPair_Reln_Dict[key_i]._GetEdgeWeight(reln_i) > TaxaPair_Reln_Dict[key_j]._GetEdgeWeight(reln_j)):
+		return i 
+	# next we prioritize the relation with higher priority
+	elif (TaxaPair_Reln_Dict[key_i]._GetConnPrVal(reln_i) < TaxaPair_Reln_Dict[key_j]._GetConnPrVal(reln_j)):
+		return j
+	elif (TaxaPair_Reln_Dict[key_i]._GetConnPrVal(reln_i) > TaxaPair_Reln_Dict[key_j]._GetConnPrVal(reln_j)):
+		return i    
+
+	return i
 
 def Resolve_R1_R2_and_R2_R1(inp_queue, i, j):
-  key_i = (inp_queue[i][0], inp_queue[i][1])
-  reln_i = inp_queue[i][2]
-  key_j = (inp_queue[j][0], inp_queue[j][1])
-  reln_j = inp_queue[j][2]
-  
-  # first we prioritize the consensus relation
-  if (reln_i in TaxaPair_Reln_Dict[key_i]._GetConsensusRelnList()) and (reln_j not in TaxaPair_Reln_Dict[key_j]._GetConsensusRelnList()):
-    return i
-  elif (reln_i not in TaxaPair_Reln_Dict[key_i]._GetConsensusRelnList()) and (reln_j in TaxaPair_Reln_Dict[key_j]._GetConsensusRelnList()):
-    return j  
-  # next we prioritize the relation with higher frequency    
-  elif (TaxaPair_Reln_Dict[key_i]._GetEdgeWeight(reln_i) < TaxaPair_Reln_Dict[key_j]._GetEdgeWeight(reln_j)):
-    return j
-  elif (TaxaPair_Reln_Dict[key_i]._GetEdgeWeight(reln_i) > TaxaPair_Reln_Dict[key_j]._GetEdgeWeight(reln_j)):
-    return i
-  # next we prioritize the relation with higher priority
-  elif (TaxaPair_Reln_Dict[key_i]._GetConnPrVal(reln_i) < TaxaPair_Reln_Dict[key_j]._GetConnPrVal(reln_j)):
-    return j
-  elif (TaxaPair_Reln_Dict[key_i]._GetConnPrVal(reln_i) > TaxaPair_Reln_Dict[key_j]._GetConnPrVal(reln_j)):
-    return i    
-  # last, we select the relation with high sum of XL
-  elif (TaxaPair_Reln_Dict[key_i]._GetAvgTreeXL() < TaxaPair_Reln_Dict[key_j]._GetAvgTreeXL()):
-    return j
-  
-  return i
-  
+	key_i = (inp_queue[i][0], inp_queue[i][1])
+	reln_i = inp_queue[i][2]
+	key_j = (inp_queue[j][0], inp_queue[j][1])
+	reln_j = inp_queue[j][2]
 
+	# first we prioritize the consensus relation
+	if (reln_i in TaxaPair_Reln_Dict[key_i]._GetConsensusRelnList()) and (reln_j not in TaxaPair_Reln_Dict[key_j]._GetConsensusRelnList()):
+		return i
+	elif (reln_i not in TaxaPair_Reln_Dict[key_i]._GetConsensusRelnList()) and (reln_j in TaxaPair_Reln_Dict[key_j]._GetConsensusRelnList()):
+		return j  
+	# next we prioritize the relation with higher frequency    
+	elif (TaxaPair_Reln_Dict[key_i]._GetEdgeWeight(reln_i) < TaxaPair_Reln_Dict[key_j]._GetEdgeWeight(reln_j)):
+		return j
+	elif (TaxaPair_Reln_Dict[key_i]._GetEdgeWeight(reln_i) > TaxaPair_Reln_Dict[key_j]._GetEdgeWeight(reln_j)):
+		return i
+	# next we prioritize the relation with higher priority
+	elif (TaxaPair_Reln_Dict[key_i]._GetConnPrVal(reln_i) < TaxaPair_Reln_Dict[key_j]._GetConnPrVal(reln_j)):
+		return j
+	elif (TaxaPair_Reln_Dict[key_i]._GetConnPrVal(reln_i) > TaxaPair_Reln_Dict[key_j]._GetConnPrVal(reln_j)):
+		return i    
+	# last, we select the relation with high sum of XL
+	elif (TaxaPair_Reln_Dict[key_i]._GetAvgTreeXL() < TaxaPair_Reln_Dict[key_j]._GetAvgTreeXL()):
+		return j
+
+	return i
+  
+"""
 ##---------------------------------------------------------
 
 #def Resolve_R4_and_R4(inp_queue, i, j):
@@ -378,41 +371,95 @@ def Resolve_R1_R2_and_R2_R1(inp_queue, i, j):
   #return i
 
 
+#------------------------------------------------------------------------
+# version 1X - 15th Sep, 2015 
+#-------------------------
+
+def Higher_Score_Value(inp_queue, i, j):
+	key1 = (inp_queue[i][0], inp_queue[i][1])
+	reln1 = inp_queue[i][2]
+	score1 = inp_queue[i][3]
+	key2 = (inp_queue[j][0], inp_queue[j][1])
+	reln2 = inp_queue[j][2]
+	score2 = inp_queue[j][3]
+	
+	# case A - if both scores are strictly positive
+	if (score1 > 0) or (score2 > 0):
+		if (score1 < score2):
+			return j
+		elif (score1 > score2):
+			return i
+		else:	#if (score1 == score2):
+			# for tie case of cost
+			if (TaxaPair_Reln_Dict[key1]._GetEdgeWeight(reln1) < TaxaPair_Reln_Dict[key2]._GetEdgeWeight(reln2)):
+				# higher edge frequency - greater priority
+				return j      
+			elif (TaxaPair_Reln_Dict[key2]._GetEdgeWeight(reln2) <= TaxaPair_Reln_Dict[key1]._GetEdgeWeight(reln1)):
+				return i      
+			#elif (TaxaPair_Reln_Dict[key1]._GetConnPrVal(reln1) < TaxaPair_Reln_Dict[key2]._GetConnPrVal(reln2)):
+				## higher edge priority - greater priority
+				#return j
+			#elif (TaxaPair_Reln_Dict[key2]._GetConnPrVal(reln2) < TaxaPair_Reln_Dict[key1]._GetConnPrVal(reln1)):
+				#return i    
+			#elif ((reln1 == RELATION_R4) and (reln2 != RELATION_R4)):
+				## relation r4 has low priority
+				#return j
+			#elif ((reln2 == RELATION_R4) and (reln1 != RELATION_R4)):
+				#return i
+			#elif ((reln1 == RELATION_R3) and ((reln2 == RELATION_R1) or (reln2 == RELATION_R2))):
+				## relation r3 is set to low priority, compared to other directed edges
+				#return j     
+			#elif ((reln2 == RELATION_R3) and ((reln1 == RELATION_R1) or (reln1 == RELATION_R2))):
+				#return i
+	else:
+		# here one or both scores are either zero or negative
+		if (TaxaPair_Reln_Dict[key1]._GetEdgeWeight(reln1) < TaxaPair_Reln_Dict[key2]._GetEdgeWeight(reln2)):
+			# higher edge frequency - greater priority
+			return j      
+		elif (TaxaPair_Reln_Dict[key2]._GetEdgeWeight(reln2) <= TaxaPair_Reln_Dict[key1]._GetEdgeWeight(reln1)):
+			return i      
+		#elif (TaxaPair_Reln_Dict[key1]._GetConnPrVal(reln1) < TaxaPair_Reln_Dict[key2]._GetConnPrVal(reln2)):
+			## higher edge priority - greater priority
+			#return j
+		#elif (TaxaPair_Reln_Dict[key2]._GetConnPrVal(reln2) < TaxaPair_Reln_Dict[key1]._GetConnPrVal(reln1)):
+			#return i    
+    
+	return i
 
 #------------------------------------------------------------------------
 # version 1B
 # new version by Sourya - 8th July 2015
 #-------------------------
-
+"""
 def Higher_Score_Value(inp_queue, i, j):
-  if (inp_queue[i][3] < inp_queue[j][3]):
-    return j
-  elif (inp_queue[i][3] > inp_queue[j][3]):
-    return i
-  else:	#if (inp_queue[i][3] == inp_queue[j][3]):
-    # for tie case of cost
-    # case A - if both relations are R4
-    if ((inp_queue[i][2] == RELATION_R4) and (inp_queue[j][2] == RELATION_R4)):
-      return Resolve_R4_and_R4(inp_queue, i, j)
-    elif ((inp_queue[i][2] == RELATION_R4) and (inp_queue[j][2] == RELATION_R3)):
-      return Resolve_R4_and_R3(inp_queue, i, j)
-    elif ((inp_queue[i][2] == RELATION_R3) and (inp_queue[j][2] == RELATION_R4)):
-      return Resolve_R4_and_R3(inp_queue, j, i)
-    elif ((inp_queue[i][2] == RELATION_R4) and ((inp_queue[j][2] == RELATION_R1) or (inp_queue[j][2] == RELATION_R2))):
-      return Resolve_R4_and_R1_R2(inp_queue, i, j)
-    elif ((inp_queue[j][2] == RELATION_R4) and ((inp_queue[i][2] == RELATION_R1) or (inp_queue[i][2] == RELATION_R2))):
-      return Resolve_R4_and_R1_R2(inp_queue, j, i)
-    elif ((inp_queue[i][2] == RELATION_R3) and ((inp_queue[j][2] == RELATION_R1) or (inp_queue[j][2] == RELATION_R2))):
-      return Resolve_R3_and_R1_R2(inp_queue, i, j)
-    elif ((inp_queue[j][2] == RELATION_R3) and ((inp_queue[i][2] == RELATION_R1) or (inp_queue[i][2] == RELATION_R2))):
-      return Resolve_R3_and_R1_R2(inp_queue, j, i)
-    elif (inp_queue[i][2] == RELATION_R3) and (inp_queue[j][2] == RELATION_R3):
-      return Resolve_R3_and_R3(inp_queue, i, j)
-    elif ((inp_queue[i][2] == RELATION_R1) and (inp_queue[j][2] == RELATION_R2)) or ((inp_queue[i][2] == RELATION_R2) and (inp_queue[j][2] == RELATION_R1)): 
-      return Resolve_R1_R2_and_R2_R1(inp_queue, i, j)
-    
-  return i
-
+	if (inp_queue[i][3] < inp_queue[j][3]):
+		return j
+	elif (inp_queue[i][3] > inp_queue[j][3]):
+		return i
+	else:	#if (inp_queue[i][3] == inp_queue[j][3]):
+		# for tie case of cost
+		# case A - if both relations are R4
+		if ((inp_queue[i][2] == RELATION_R4) and (inp_queue[j][2] == RELATION_R4)):
+			return Resolve_R4_and_R4(inp_queue, i, j)
+		elif ((inp_queue[i][2] == RELATION_R4) and (inp_queue[j][2] == RELATION_R3)):
+			return Resolve_R4_and_R3(inp_queue, i, j)
+		elif ((inp_queue[i][2] == RELATION_R3) and (inp_queue[j][2] == RELATION_R4)):
+			return Resolve_R4_and_R3(inp_queue, j, i)
+		elif ((inp_queue[i][2] == RELATION_R4) and ((inp_queue[j][2] == RELATION_R1) or (inp_queue[j][2] == RELATION_R2))):
+			return Resolve_R4_and_R1_R2(inp_queue, i, j)
+		elif ((inp_queue[j][2] == RELATION_R4) and ((inp_queue[i][2] == RELATION_R1) or (inp_queue[i][2] == RELATION_R2))):
+			return Resolve_R4_and_R1_R2(inp_queue, j, i)
+		elif ((inp_queue[i][2] == RELATION_R3) and ((inp_queue[j][2] == RELATION_R1) or (inp_queue[j][2] == RELATION_R2))):
+			return Resolve_R3_and_R1_R2(inp_queue, i, j)
+		elif ((inp_queue[j][2] == RELATION_R3) and ((inp_queue[i][2] == RELATION_R1) or (inp_queue[i][2] == RELATION_R2))):
+			return Resolve_R3_and_R1_R2(inp_queue, j, i)
+		elif (inp_queue[i][2] == RELATION_R3) and (inp_queue[j][2] == RELATION_R3):
+			return Resolve_R3_and_R3(inp_queue, i, j)
+		elif ((inp_queue[i][2] == RELATION_R1) and (inp_queue[j][2] == RELATION_R2)) or ((inp_queue[i][2] == RELATION_R2) and (inp_queue[j][2] == RELATION_R1)): 
+			return Resolve_R1_R2_and_R2_R1(inp_queue, i, j)
+		
+	return i
+"""
 #------------------------------------------------------------------------
 # version 1A
 # new version by Sourya - 8th July 2015
@@ -548,68 +595,68 @@ def Lower_Score_Value(inp_queue, i, j):
   
 # this function exchanges two elements in the heap
 def Exchange_Elem(inp_queue, i, j):
-  temp_key = inp_queue[i][0]
-  inp_queue[i][0] = inp_queue[j][0]
-  inp_queue[j][0] = temp_key
-  temp_key = inp_queue[i][1]
-  inp_queue[i][1] = inp_queue[j][1]
-  inp_queue[j][1] = temp_key
-  temp_edge = inp_queue[i][2]
-  inp_queue[i][2] = inp_queue[j][2]
-  inp_queue[j][2] = temp_edge
-  temp_val = inp_queue[i][3]
-  inp_queue[i][3] = inp_queue[j][3]
-  inp_queue[j][3] = temp_val
+	temp_key = inp_queue[i][0]
+	inp_queue[i][0] = inp_queue[j][0]
+	inp_queue[j][0] = temp_key
+	temp_key = inp_queue[i][1]
+	inp_queue[i][1] = inp_queue[j][1]
+	inp_queue[j][1] = temp_key
+	temp_edge = inp_queue[i][2]
+	inp_queue[i][2] = inp_queue[j][2]
+	inp_queue[j][2] = temp_edge
+	temp_val = inp_queue[i][3]
+	inp_queue[i][3] = inp_queue[j][3]
+	inp_queue[j][3] = temp_val
 
 # maintain max heap property
 # note: heap_size may not be the actual length of the queue
 # but the working length (on which the remaining sorting operation will take place)
 def Max_Heapify(inp_queue, idx, heap_size):
-  l = Left(idx)
-  r = Right(idx)
-  if (l < heap_size) and (Higher_Score_Value(inp_queue, idx, l) == l):
-    largest_idx = l
-  else:
-    largest_idx = idx
-  if (r < heap_size) and (Higher_Score_Value(inp_queue, largest_idx, r) == r):
-    largest_idx = r
-  if (largest_idx != idx):
-    Exchange_Elem(inp_queue, idx, largest_idx)
-    Max_Heapify(inp_queue, largest_idx, heap_size)
+	l = Left(idx)
+	r = Right(idx)
+	if (l < heap_size) and (Higher_Score_Value(inp_queue, idx, l) == l):
+		largest_idx = l
+	else:
+		largest_idx = idx
+	if (r < heap_size) and (Higher_Score_Value(inp_queue, largest_idx, r) == r):
+		largest_idx = r
+	if (largest_idx != idx):
+		Exchange_Elem(inp_queue, idx, largest_idx)
+		Max_Heapify(inp_queue, largest_idx, heap_size)
 
 # extract the current maximum and also pop the element from the heap
 def Heap_Extract_Max(inp_queue):
-  if (len(inp_queue) < 1):
-    print 'underflow of max priority queue'
-  # 1st element is the maximum
-  # comment - sourya
-  # this only assigns the pointer which will lead incorrect result
-  # when the heap is modified
-  # if the 
-  #max_elem = inp_queue[0]
-  # add - sourya
-  max_elem = list(inp_queue[0])
-  # end add - sourya
-  # replace the first element with the last element of the queue
-  Exchange_Elem(inp_queue, 0, len(inp_queue) - 1)
-  # delete the last element of the queue
-  del inp_queue[len(inp_queue) - 1]
-  heap_size = len(inp_queue)
-  # call the max_heapify function to maintain the heap property
-  # 0 is the starting index of the list storing the heap structure
-  Max_Heapify(inp_queue, 0, heap_size)
-  return max_elem
+	if (len(inp_queue) < 1):
+		print 'underflow of max priority queue'
+	# 1st element is the maximum
+	# comment - sourya
+	# this only assigns the pointer which will lead incorrect result
+	# when the heap is modified
+	# if the 
+	#max_elem = inp_queue[0]
+	# add - sourya
+	max_elem = list(inp_queue[0])
+	# end add - sourya
+	# replace the first element with the last element of the queue
+	Exchange_Elem(inp_queue, 0, len(inp_queue) - 1)
+	# delete the last element of the queue
+	del inp_queue[len(inp_queue) - 1]
+	heap_size = len(inp_queue)
+	# call the max_heapify function to maintain the heap property
+	# 0 is the starting index of the list storing the heap structure
+	Max_Heapify(inp_queue, 0, heap_size)
+	return max_elem
   
 # this function builds the priority queue (max heap property)
 def Build_Max_Heap(inp_queue):
-  heap_size = len(inp_queue)
-  for idx in range(int(len(inp_queue) / 2), -1, -1):
-    Max_Heapify(inp_queue, idx, heap_size)
+	heap_size = len(inp_queue)
+	for idx in range(int(len(inp_queue) / 2), -1, -1):
+		Max_Heapify(inp_queue, idx, heap_size)
     
 # this is the heap sort algorithm
 def Sort_Priority_Queue(inp_queue):
-  Build_Max_Heap(inp_queue)
-  heap_size = len(inp_queue)
+	Build_Max_Heap(inp_queue)
+	heap_size = len(inp_queue)
   ## should be commented - sourya
   #for idx in range((len(inp_queue) - 1), 0, -1):
     #Exchange_Elem(inp_queue, 0, idx)
