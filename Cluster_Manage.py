@@ -717,11 +717,12 @@ the selection is carried out using a scoring mechanism
 									variation of XL measure is indicated by this parameter
 """
 def SolveMultipleParentC2Problem(Output_Text_File, MPP_SOLVE_METRIC, DIST_MAT_TYPE):
+	# open the Output_Text_File
+	fp = open(Output_Text_File, 'a')
+	
 	for cx in Cluster_Info_Dict:
 		if (DEBUG_LEVEL > 2):
-			fp = open(Output_Text_File, 'a')
 			fp.write('\n ***** Examining cluster -- ')
-			fp.close()      
 			Cluster_Info_Dict[cx]._PrintClusterInfo(cx, Output_Text_File)    
 		
 		if (Cluster_Info_Dict[cx]._Get_Indegree() > 1):
@@ -730,9 +731,7 @@ def SolveMultipleParentC2Problem(Output_Text_File, MPP_SOLVE_METRIC, DIST_MAT_TY
 			take note of all its parent clusters (indexed by cz in the iterations)
 			"""
 			if (DEBUG_LEVEL > 2):
-				fp = open(Output_Text_File, 'a')
 				fp.write('\n ***** Examining cluster with more than one indegree -- before in edge list fixing: ')
-				fp.close()      
 				Cluster_Info_Dict[cx]._PrintClusterInfo(cx, Output_Text_File)
 			
 			"""
@@ -740,7 +739,6 @@ def SolveMultipleParentC2Problem(Output_Text_File, MPP_SOLVE_METRIC, DIST_MAT_TY
 			cz signifies one parent node of the current cluster cx
 			"""
 			scoring_dict = dict()
-			#for cz in Cluster_Info_Dict[cx]._GetInEdgeList():
 			for cz in Cluster_Info_Dict[cx]._GetClustRelnList(RELATION_R2):
 				scoring_dict.setdefault(cz, 0)
 			
@@ -748,13 +746,8 @@ def SolveMultipleParentC2Problem(Output_Text_File, MPP_SOLVE_METRIC, DIST_MAT_TY
 			now for each of the parent clusters cz of the current cluster cx, 
 			compute the R1 score from cz to cx
 			"""
-			#for cz in Cluster_Info_Dict[cx]._GetInEdgeList():
 			for cz in Cluster_Info_Dict[cx]._GetClustRelnList(RELATION_R2):
 				scoring_dict[cz] = ComputeScore(cz, cx, Output_Text_File, MPP_SOLVE_METRIC, DIST_MAT_TYPE)
-			
-			# open the output file
-			if (DEBUG_LEVEL > 2):
-				fp = open(Output_Text_File, 'a')      
 			
 			"""
 			all such R1 scores from cz to cx (where cz iteratively points to one ancestor of cx)
@@ -764,7 +757,6 @@ def SolveMultipleParentC2Problem(Output_Text_File, MPP_SOLVE_METRIC, DIST_MAT_TY
 			value: the score measure
 			"""
 			Scoring_List = []
-			#for cz in Cluster_Info_Dict[cx]._GetInEdgeList():
 			for cz in Cluster_Info_Dict[cx]._GetClustRelnList(RELATION_R2):
 				if (DEBUG_LEVEL > 2):
 					fp.write('\n scoring dict elem: ' + str(cz) + ' score: ' + str(Scoring_Dict[cz]))
@@ -785,10 +777,6 @@ def SolveMultipleParentC2Problem(Output_Text_File, MPP_SOLVE_METRIC, DIST_MAT_TY
 				for i in range(len(Scoring_List)):
 					fp.write('\n elem idx: ' + str(i) + ' cluster label: ' + str(Scoring_List[i][0]) + ' score: ' + str(Scoring_List[i][1]))
 		
-			# close the output file
-			if (DEBUG_LEVEL > 2):
-				fp.close()
-
 			if (MPP_SOLVE_METRIC == 1):
 				"""
 				for the priority measure, remove all except the last element from the 
@@ -797,8 +785,6 @@ def SolveMultipleParentC2Problem(Output_Text_File, MPP_SOLVE_METRIC, DIST_MAT_TY
 				"""
 				for i in range(len(Scoring_List) - 1):
 					target_delete_clust_idx = Scoring_List[i][0]
-					#Cluster_Info_Dict[cx]._RemoveInEdge(target_delete_clust_idx)
-					#Cluster_Info_Dict[target_delete_clust_idx]._RemoveOutEdge(cx)
 					Cluster_Info_Dict[cx]._RemoveRelnInstance(RELATION_R2, target_delete_clust_idx)
 					Cluster_Info_Dict[target_delete_clust_idx]._RemoveRelnInstance(RELATION_R1, cx)
 			else:
@@ -809,17 +795,16 @@ def SolveMultipleParentC2Problem(Output_Text_File, MPP_SOLVE_METRIC, DIST_MAT_TY
 				"""
 				for i in range(1, len(Scoring_List)):
 					target_delete_clust_idx = Scoring_List[i][0]
-					#Cluster_Info_Dict[cx]._RemoveInEdge(target_delete_clust_idx)
-					#Cluster_Info_Dict[target_delete_clust_idx]._RemoveOutEdge(cx)
 					Cluster_Info_Dict[cx]._RemoveRelnInstance(RELATION_R2, target_delete_clust_idx)
 					Cluster_Info_Dict[target_delete_clust_idx]._RemoveRelnInstance(RELATION_R1, cx)
 			
 			if (DEBUG_LEVEL > 2):
-				fp = open(Output_Text_File, 'a')
 				fp.write('\n ***** Examining cluster with more than one indegree -- after in edge list fixing: ')
-				fp.close()      
 				Cluster_Info_Dict[cx]._PrintClusterInfo(cx, Output_Text_File)
 
+	# close the Output_Text_File
+	fp.close()
+	return
 
 #-----------------------------------------------------        
 """
@@ -869,8 +854,6 @@ def CompressDirectedGraph(Reachability_Graph_Mat):
 						# remove the edge from the cluster node directory
 						clust_i = CURRENT_CLUST_IDX_LIST[i]
 						clust_k = CURRENT_CLUST_IDX_LIST[k]
-						#Cluster_Info_Dict[clust_i]._RemoveOutEdge(clust_k)
-						#Cluster_Info_Dict[clust_k]._RemoveInEdge(clust_i)
 						Cluster_Info_Dict[clust_i]._RemoveRelnInstance(RELATION_R1, clust_k)
 						Cluster_Info_Dict[clust_k]._RemoveRelnInstance(RELATION_R2, clust_i)
 

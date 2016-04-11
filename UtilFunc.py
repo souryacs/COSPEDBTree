@@ -90,7 +90,6 @@ def PrintNewick(root_clust_node_idx):
 	if 0:
 		print 'in function printnewick:   root_clust_node_idx: ', root_clust_node_idx
 		print 'taxa set: ', Cluster_Info_Dict[root_clust_node_idx]._GetSpeciesList()  
-		#print 'out clust list: ', Cluster_Info_Dict[root_clust_node_idx]._GetOutEdgeList()
 		print 'out clust list: ', Cluster_Info_Dict[root_clust_node_idx]._GetClustRelnList(RELATION_R1)
 
 	Tree_Str_List = ''
@@ -100,7 +99,6 @@ def PrintNewick(root_clust_node_idx):
 		Cluster_Info_Dict[root_clust_node_idx]._SetExploredStatus()
 		# get the out edge list of the current node which are not explored yet 
 		outnodes = []
-		#for l in Cluster_Info_Dict[root_clust_node_idx]._GetOutEdgeList():
 		for l in Cluster_Info_Dict[root_clust_node_idx]._GetClustRelnList(RELATION_R1):
 			if (Cluster_Info_Dict[l]._GetExploredStatus() == 0):
 				outnodes.append(l)
@@ -260,7 +258,8 @@ def DeriveCoupletRelations(Curr_tree, WEIGHT_TAXA_SUBSET, tr_idx):
 		if (len(curr_node_child_leaf_nodes) > 1):
 			for i in range(len(curr_node_child_leaf_nodes) - 1):
 				for j in range(i+1, len(curr_node_child_leaf_nodes)):
-					DefineLeafPairReln(xl_val, curr_node_level, curr_node_rank, curr_node_child_leaf_nodes[i], curr_node_child_leaf_nodes[j], \
+					DefineLeafPairReln(xl_val, curr_node_level, curr_node_rank, \
+						curr_node_child_leaf_nodes[i], curr_node_child_leaf_nodes[j], \
 						RELATION_R3, curr_tree_taxa, WEIGHT_TAXA_SUBSET, tr_idx)
 		
 		"""

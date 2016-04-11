@@ -16,8 +16,6 @@ def Connect_ClusterPair(Reachability_Graph_Mat, nodeA_reach_mat_idx, nodeB_reach
 		"""
 		adjust the clusters
 		"""
-		#Cluster_Info_Dict[nodeA_clust_idx]._AddOutEdge(nodeB_clust_idx)
-		#Cluster_Info_Dict[nodeB_clust_idx]._AddInEdge(nodeA_clust_idx)
 		Cluster_Info_Dict[nodeA_clust_idx]._AddRelnInstance(RELATION_R1, nodeB_clust_idx)
 		Cluster_Info_Dict[nodeB_clust_idx]._AddRelnInstance(RELATION_R2, nodeA_clust_idx)
 		"""
@@ -29,8 +27,6 @@ def Connect_ClusterPair(Reachability_Graph_Mat, nodeA_reach_mat_idx, nodeB_reach
 		"""
 		adjust the clusters
 		"""
-		#Cluster_Info_Dict[nodeA_clust_idx]._AddNoEdge(nodeB_clust_idx)
-		#Cluster_Info_Dict[nodeB_clust_idx]._AddNoEdge(nodeA_clust_idx)    
 		Cluster_Info_Dict[nodeA_clust_idx]._AddRelnInstance(RELATION_R4, nodeB_clust_idx)
 		Cluster_Info_Dict[nodeB_clust_idx]._AddRelnInstance(RELATION_R4, nodeA_clust_idx)    
 		"""
@@ -63,7 +59,6 @@ def TransClosUpd(Reachability_Graph_Mat, nodeA_reach_mat_idx, nodeB_reach_mat_id
 		if D->A exists
 		then establish D->B
 		"""
-		#for x in Cluster_Info_Dict[src_taxa_clust_idx]._GetInEdgeList():
 		for x in Cluster_Info_Dict[src_taxa_clust_idx]._GetClustRelnList(RELATION_R2):
 			if (Reachability_Graph_Mat[CURRENT_CLUST_IDX_LIST.index(x)][dest_reach_mat_idx] == 0):
 				Connect_ClusterPair(Reachability_Graph_Mat, CURRENT_CLUST_IDX_LIST.index(x), \
@@ -74,7 +69,6 @@ def TransClosUpd(Reachability_Graph_Mat, nodeA_reach_mat_idx, nodeB_reach_mat_id
 		if B->E exists
 		then establish A->E
 		"""
-		#for x in Cluster_Info_Dict[dest_taxa_clust_idx]._GetOutEdgeList():
 		for x in Cluster_Info_Dict[dest_taxa_clust_idx]._GetClustRelnList(RELATION_R1):
 			if (Reachability_Graph_Mat[src_reach_mat_idx][CURRENT_CLUST_IDX_LIST.index(x)] == 0):
 				Connect_ClusterPair(Reachability_Graph_Mat, src_reach_mat_idx, \
@@ -85,8 +79,6 @@ def TransClosUpd(Reachability_Graph_Mat, nodeA_reach_mat_idx, nodeB_reach_mat_id
 		if D->A and B->E exists
 		then establish D->E  
 		"""
-		#for x in Cluster_Info_Dict[src_taxa_clust_idx]._GetInEdgeList():
-			#for y in Cluster_Info_Dict[dest_taxa_clust_idx]._GetOutEdgeList():
 		for x in Cluster_Info_Dict[src_taxa_clust_idx]._GetClustRelnList(RELATION_R2):
 			for y in Cluster_Info_Dict[dest_taxa_clust_idx]._GetClustRelnList(RELATION_R1):
 				if (Reachability_Graph_Mat[CURRENT_CLUST_IDX_LIST.index(x)][CURRENT_CLUST_IDX_LIST.index(y)] == 0):  
@@ -98,7 +90,6 @@ def TransClosUpd(Reachability_Graph_Mat, nodeA_reach_mat_idx, nodeB_reach_mat_id
 		if D><A exists
 		then establish D><B
 		"""
-		#for x in Cluster_Info_Dict[src_taxa_clust_idx]._GetNoEdgeList():
 		for x in Cluster_Info_Dict[src_taxa_clust_idx]._GetClustRelnList(RELATION_R4):
 			if (Reachability_Graph_Mat[CURRENT_CLUST_IDX_LIST.index(x)][dest_reach_mat_idx] == 0):
 				Connect_ClusterPair(Reachability_Graph_Mat, CURRENT_CLUST_IDX_LIST.index(x), \
@@ -110,8 +101,6 @@ def TransClosUpd(Reachability_Graph_Mat, nodeA_reach_mat_idx, nodeB_reach_mat_id
 		then for all B->E
 		establish D><E
 		"""
-		#for x in Cluster_Info_Dict[src_taxa_clust_idx]._GetNoEdgeList():
-			#for y in Cluster_Info_Dict[dest_taxa_clust_idx]._GetOutEdgeList():
 		for x in Cluster_Info_Dict[src_taxa_clust_idx]._GetClustRelnList(RELATION_R4):
 			for y in Cluster_Info_Dict[dest_taxa_clust_idx]._GetClustRelnList(RELATION_R1):
 				if (Reachability_Graph_Mat[CURRENT_CLUST_IDX_LIST.index(x)][CURRENT_CLUST_IDX_LIST.index(y)] == 0):
@@ -128,7 +117,6 @@ def TransClosUpd(Reachability_Graph_Mat, nodeA_reach_mat_idx, nodeB_reach_mat_id
 		"""
 		src_clust_out_neighb = []
 		src_clust_out_neighb.append(src_taxa_clust_idx)
-		#src_clust_out_neighb.extend(Cluster_Info_Dict[src_taxa_clust_idx]._GetOutEdgeList())
 		src_clust_out_neighb.extend(Cluster_Info_Dict[src_taxa_clust_idx]._GetClustRelnList(RELATION_R1))
 		
 		"""
@@ -137,7 +125,6 @@ def TransClosUpd(Reachability_Graph_Mat, nodeA_reach_mat_idx, nodeB_reach_mat_id
 		"""
 		dest_clust_out_neighb = []
 		dest_clust_out_neighb.append(dest_taxa_clust_idx)
-		#dest_clust_out_neighb.extend(Cluster_Info_Dict[dest_taxa_clust_idx]._GetOutEdgeList())
 		dest_clust_out_neighb.extend(Cluster_Info_Dict[dest_taxa_clust_idx]._GetClustRelnList(RELATION_R1))
 		
 		"""
@@ -173,27 +160,18 @@ def Merge_Clusters(Reachability_Graph_Mat, dest_taxa_idx, src_taxa_idx, dest_clu
 	we can overwrite the no edge with a definite out / in edge
 	"""
 	
-	#for x in Cluster_Info_Dict[src_clust_idx]._GetOutEdgeList():
 	for x in Cluster_Info_Dict[src_clust_idx]._GetClustRelnList(RELATION_R1):
-		#Cluster_Info_Dict[x]._RemoveInEdge(src_clust_idx)
 		Cluster_Info_Dict[x]._RemoveRelnInstance(RELATION_R2, src_clust_idx)
-		#Cluster_Info_Dict[src_clust_idx]._RemoveOutEdge(x)
 		if (Reachability_Graph_Mat[dest_clust_reach_mat_idx][CURRENT_CLUST_IDX_LIST.index(x)] == 0):
 			Connect_ClusterPair(Reachability_Graph_Mat, dest_clust_reach_mat_idx, CURRENT_CLUST_IDX_LIST.index(x), RELATION_R1, dest_clust_idx, x)  
 
-	#for x in Cluster_Info_Dict[src_clust_idx]._GetInEdgeList():
 	for x in Cluster_Info_Dict[src_clust_idx]._GetClustRelnList(RELATION_R2):
-		#Cluster_Info_Dict[x]._RemoveOutEdge(src_clust_idx)
 		Cluster_Info_Dict[x]._RemoveRelnInstance(RELATION_R1, src_clust_idx)
-		#Cluster_Info_Dict[src_clust_idx]._RemoveInEdge(x)
 		if (Reachability_Graph_Mat[CURRENT_CLUST_IDX_LIST.index(x)][dest_clust_reach_mat_idx] == 0):
 			Connect_ClusterPair(Reachability_Graph_Mat, CURRENT_CLUST_IDX_LIST.index(x), dest_clust_reach_mat_idx, RELATION_R1, x, dest_clust_idx)  
 
-	#for x in Cluster_Info_Dict[src_clust_idx]._GetNoEdgeList():
 	for x in Cluster_Info_Dict[src_clust_idx]._GetClustRelnList(RELATION_R4):
-		#Cluster_Info_Dict[x]._RemoveNoEdge(src_clust_idx)
 		Cluster_Info_Dict[x]._RemoveRelnInstance(RELATION_R4, src_clust_idx)
-		#Cluster_Info_Dict[src_clust_idx]._RemoveNoEdge(x)
 		if (Reachability_Graph_Mat[CURRENT_CLUST_IDX_LIST.index(x)][dest_clust_reach_mat_idx] == 0):
 			Connect_ClusterPair(Reachability_Graph_Mat, CURRENT_CLUST_IDX_LIST.index(x), dest_clust_reach_mat_idx, RELATION_R4, x, dest_clust_idx)      
 					

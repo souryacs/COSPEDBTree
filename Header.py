@@ -474,25 +474,6 @@ class Cluster_node(object):
 		curr_clust->cy /  cy->curr_clust / R3 (cy, curr_clust) / R4 (cy, curr_clust) are present
 		"""
 		self.Reln_List = [[] for i in range(4)]
-		
-		#"""
-		#stores the indices of clusters cy such that curr_clust->cy is achieved
-		#"""
-		#self.out_edge_list = []
-		#"""
-		#stores the indices of clusters cy such that cy->curr_clust is achieved
-		#"""
-		#self.in_edge_list = []
-		#"""
-		#stores the indices of clusters cy such that cy and curr_clust 
-		#are not related by any directed edge based connection
-		#"""
-		#self.no_edge_list = []
-		#"""
-		#stores the indices of clusters cy such that cy and curr_clust 
-		#are related by R3 relation 
-		#"""
-		#self.eq_edge_list = []
 		"""
 		during initialization, append one tuple to this cluster
 		"""
@@ -568,32 +549,6 @@ class Cluster_node(object):
 	def _GetClustRelnList(self, reln_type):
 		return self.Reln_List[reln_type]
 	
-	#"""
-	#returns the list of clusters cy such that curr_clust->cy connection is present
-	#"""
-	#def _GetOutEdgeList(self):
-		#return self.out_edge_list
-	
-	#"""
-	#returns the list of clusters cy such that cy->curr_clust connection is present
-	#"""
-	#def _GetInEdgeList(self):
-		#return self.in_edge_list    
-
-	#"""
-	#returns the set of clusters cy such that there exists no directed edge 
-	#between cy and curr_clust is present
-	#"""
-	#def _GetNoEdgeList(self):
-		#return self.no_edge_list    
-
-	#"""
-	#returns the set of clusters cy such that there exists R3 relation
-	#between cy and curr_clust
-	#"""
-	#def _GetEqEdgeList(self):
-		#return self.eq_edge_list    
-	
 	"""
 	appends one cluster index to the list of the specified "reln_type"
 	"""
@@ -601,36 +556,6 @@ class Cluster_node(object):
 		if (dest_clust_idx not in self.Reln_List[reln_type]):
 			self.Reln_List[reln_type].append(dest_clust_idx)
 	
-	#"""
-	#adds one cluster cy in the list of clusters such that curr_clust->cy connection is present
-	#"""
-	#def _AddOutEdge(self, dest_clust_idx):
-		#if dest_clust_idx not in self.out_edge_list:
-			#self.out_edge_list.append(dest_clust_idx)
-		
-	#"""
-	#adds one cluster cy in the list of clusters such that cy->curr_clust connection is present
-	#"""
-	#def _AddInEdge(self, src_clust_idx):
-		#if src_clust_idx not in self.in_edge_list:
-			#self.in_edge_list.append(src_clust_idx)
-
-	#"""
-	#adds one cluster cy in the list of clusters such that there exists no directed edge 
-	#between cy and curr_clust
-	#"""
-	#def _AddNoEdge(self, src_clust_idx):
-		#if src_clust_idx not in self.no_edge_list:
-			#self.no_edge_list.append(src_clust_idx)
-	
-	#"""
-	#adds one cluster cy in the list of clusters such that there exists R3 relation
-	#between cy and curr_clust
-	#"""
-	#def _AddEqEdge(self, src_clust_idx):
-		#if src_clust_idx not in self.eq_edge_list:
-			#self.eq_edge_list.append(src_clust_idx)
-
 	"""
 	removes one cluster index to the list of the specified "reln_type"
 	"""
@@ -638,45 +563,11 @@ class Cluster_node(object):
 		if dest_clust_idx in self.Reln_List[reln_type]:
 			self.Reln_List[reln_type].remove(dest_clust_idx)    
 
-	#"""
-	#removes one cluster cy in the list of clusters such that curr_clust->cy connection is now deleted
-	#"""
-	#def _RemoveOutEdge(self, dest_clust_idx):
-		#if dest_clust_idx in self.out_edge_list:
-			#self.out_edge_list.remove(dest_clust_idx)    
-		
-	#"""
-	#removes one cluster cy in the list of clusters such that cy->curr_clust connection is now deleted
-	#"""
-	#def _RemoveInEdge(self, dest_clust_idx):
-		#if dest_clust_idx in self.in_edge_list:
-			#self.in_edge_list.remove(dest_clust_idx)    
-		
-	#"""
-	#removes one cluster cy in the list of clusters such that information between no 
-	#directed edge connection between the curr_clust and the cluster cy is now deleted
-	#"""
-	#def _RemoveNoEdge(self, dest_clust_idx):
-		#if dest_clust_idx in self.no_edge_list:
-			#self.no_edge_list.remove(dest_clust_idx)    
-
-	#"""
-	#removes one cluster cy in the list of clusters such that information between R3 relation 
-	#between the curr_clust and the cluster cy is now deleted
-	#"""
-	#def _RemoveEqEdge(self, dest_clust_idx):
-		#if dest_clust_idx in self.eq_edge_list:
-			#self.eq_edge_list.remove(dest_clust_idx)    
-
 	#--------------------------------------------------------
 	def _PrintClusterInfo(self, key, Output_Text_File):
 		fp = open(Output_Text_File, 'a')    
 		fp.write('\n cluster key: ' + str(key))
 		fp.write('\n species list: ' + str(self.Species_List))
-		#fp.write('\n out edge list (R1): ' + str(self.out_edge_list))
-		#fp.write('\n in edge list (R2): ' + str(self.in_edge_list))
-		#fp.write('\n No edge list (R4): ' + str(self.no_edge_list))
-		#fp.write('\n Eq edge list (R3): ' + str(self.eq_edge_list))
 		fp.write('\n out edge list (R1): ' + str(self.Reln_List[RELATION_R1]))
 		fp.write('\n in edge list (R2): ' + str(self.Reln_List[RELATION_R2]))
 		fp.write('\n No edge list (R4): ' + str(self.Reln_List[RELATION_R4]))

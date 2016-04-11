@@ -102,7 +102,6 @@ def Possible_Conflict_Curr_Reln(src_taxa_idx, dest_taxa_idx, Reachability_Graph_
 		and there exists D->A 
 		then if B->D or B><D then return a conflict
 		"""
-		#for x in Cluster_Info_Dict[src_taxa_clust_idx]._GetInEdgeList():
 		for x in Cluster_Info_Dict[src_taxa_clust_idx]._GetClustRelnList(RELATION_R2):
 			if (Reachability_Graph_Mat[reach_mat_dest_taxa_clust_idx][CURRENT_CLUST_IDX_LIST.index(x)] > 0):
 				return 1
@@ -112,7 +111,6 @@ def Possible_Conflict_Curr_Reln(src_taxa_idx, dest_taxa_idx, Reachability_Graph_
 		and there exists B->E 
 		then if E->A or E><A then return a conflict  
 		"""
-		#for x in Cluster_Info_Dict[dest_taxa_clust_idx]._GetOutEdgeList():
 		for x in Cluster_Info_Dict[dest_taxa_clust_idx]._GetClustRelnList(RELATION_R1):
 			if (Reachability_Graph_Mat[CURRENT_CLUST_IDX_LIST.index(x)][reach_mat_src_taxa_clust_idx] > 0):
 				return 1
@@ -122,8 +120,6 @@ def Possible_Conflict_Curr_Reln(src_taxa_idx, dest_taxa_idx, Reachability_Graph_
 		and there exists D->A and B->E 
 		then if E->D or E=D or E><D then return a conflict  
 		"""
-		#for x in Cluster_Info_Dict[src_taxa_clust_idx]._GetInEdgeList():
-			#for y in Cluster_Info_Dict[dest_taxa_clust_idx]._GetOutEdgeList():
 		for x in Cluster_Info_Dict[src_taxa_clust_idx]._GetClustRelnList(RELATION_R2):
 			for y in Cluster_Info_Dict[dest_taxa_clust_idx]._GetClustRelnList(RELATION_R1):
 				if (x == y) or (Reachability_Graph_Mat[CURRENT_CLUST_IDX_LIST.index(y)][CURRENT_CLUST_IDX_LIST.index(x)] > 0):
@@ -135,7 +131,6 @@ def Possible_Conflict_Curr_Reln(src_taxa_idx, dest_taxa_idx, Reachability_Graph_
 		then it would be D><B afterwards 
 		so if there is D->B, B->D or D=B then return a conflict  
 		"""
-		#for x in Cluster_Info_Dict[src_taxa_clust_idx]._GetNoEdgeList():
 		for x in Cluster_Info_Dict[src_taxa_clust_idx]._GetClustRelnList(RELATION_R4):
 			if (dest_taxa_clust_idx == x) \
 				or (Reachability_Graph_Mat[CURRENT_CLUST_IDX_LIST.index(x)][reach_mat_dest_taxa_clust_idx] == 1) \
@@ -149,8 +144,6 @@ def Possible_Conflict_Curr_Reln(src_taxa_idx, dest_taxa_idx, Reachability_Graph_
 		it would be D><E afterwards 
 		so if D->E or E->D or D=E then return a conflict  
 		"""
-		#for x in Cluster_Info_Dict[src_taxa_clust_idx]._GetNoEdgeList():
-			#for y in Cluster_Info_Dict[dest_taxa_clust_idx]._GetOutEdgeList():
 		for x in Cluster_Info_Dict[src_taxa_clust_idx]._GetClustRelnList(RELATION_R4):
 			for y in Cluster_Info_Dict[dest_taxa_clust_idx]._GetClustRelnList(RELATION_R1):
 				if (x == y) \
@@ -165,7 +158,6 @@ def Possible_Conflict_Curr_Reln(src_taxa_idx, dest_taxa_idx, Reachability_Graph_
 		and there exists B->D 
 		then if D->A or D><A or D=A then return a conflict    
 		"""
-		#for x in Cluster_Info_Dict[dest_taxa_clust_idx]._GetOutEdgeList():
 		for x in Cluster_Info_Dict[dest_taxa_clust_idx]._GetClustRelnList(RELATION_R1):
 			if (x == src_taxa_clust_idx) or (Reachability_Graph_Mat[CURRENT_CLUST_IDX_LIST.index(x)][reach_mat_src_taxa_clust_idx] > 0):
 				return 1
@@ -175,7 +167,6 @@ def Possible_Conflict_Curr_Reln(src_taxa_idx, dest_taxa_idx, Reachability_Graph_
 		and there exists D->B 
 		then if A->D or A><D or A=D then return a conflict    	
 		"""
-		#for x in Cluster_Info_Dict[dest_taxa_clust_idx]._GetInEdgeList():
 		for x in Cluster_Info_Dict[dest_taxa_clust_idx]._GetClustRelnList(RELATION_R2):
 			if (x == src_taxa_clust_idx) or (Reachability_Graph_Mat[reach_mat_src_taxa_clust_idx][CURRENT_CLUST_IDX_LIST.index(x)] > 0):
 				return 1
@@ -185,7 +176,6 @@ def Possible_Conflict_Curr_Reln(src_taxa_idx, dest_taxa_idx, Reachability_Graph_
 		and there exists B><D 
 		then if A->D or D->A or A=D then return a conflict    	
 		"""
-		#for x in Cluster_Info_Dict[dest_taxa_clust_idx]._GetNoEdgeList():
 		for x in Cluster_Info_Dict[dest_taxa_clust_idx]._GetClustRelnList(RELATION_R4):
 			if (x == src_taxa_clust_idx) or (Reachability_Graph_Mat[reach_mat_src_taxa_clust_idx][CURRENT_CLUST_IDX_LIST.index(x)] == 1) \
 					or (Reachability_Graph_Mat[CURRENT_CLUST_IDX_LIST.index(x)][reach_mat_src_taxa_clust_idx] == 1):
@@ -196,7 +186,6 @@ def Possible_Conflict_Curr_Reln(src_taxa_idx, dest_taxa_idx, Reachability_Graph_
 		and there exists A->D 
 		then if D->B or D><B or D=B then return a conflict    	
 		"""
-		#for x in Cluster_Info_Dict[src_taxa_clust_idx]._GetOutEdgeList():
 		for x in Cluster_Info_Dict[src_taxa_clust_idx]._GetClustRelnList(RELATION_R1):
 			if (x == dest_taxa_clust_idx) or (Reachability_Graph_Mat[CURRENT_CLUST_IDX_LIST.index(x)][reach_mat_dest_taxa_clust_idx] > 0):
 				return 1
@@ -206,7 +195,6 @@ def Possible_Conflict_Curr_Reln(src_taxa_idx, dest_taxa_idx, Reachability_Graph_
 		and there exists D->A 
 		then if B->D or B><D or B=D then return a conflict    	
 		"""
-		#for x in Cluster_Info_Dict[src_taxa_clust_idx]._GetInEdgeList():
 		for x in Cluster_Info_Dict[src_taxa_clust_idx]._GetClustRelnList(RELATION_R2):
 			if (x == dest_taxa_clust_idx) or (Reachability_Graph_Mat[reach_mat_dest_taxa_clust_idx][CURRENT_CLUST_IDX_LIST.index(x)] > 0):
 				return 1
@@ -216,7 +204,6 @@ def Possible_Conflict_Curr_Reln(src_taxa_idx, dest_taxa_idx, Reachability_Graph_
 		and there exists A><D 
 		then if D->B or B->D or B=D then return a conflict    	
 		"""
-		#for x in Cluster_Info_Dict[src_taxa_clust_idx]._GetNoEdgeList():
 		for x in Cluster_Info_Dict[src_taxa_clust_idx]._GetClustRelnList(RELATION_R4):
 			if (x == dest_taxa_clust_idx) or (Reachability_Graph_Mat[reach_mat_dest_taxa_clust_idx][CURRENT_CLUST_IDX_LIST.index(x)] == 1) \
 					or (Reachability_Graph_Mat[CURRENT_CLUST_IDX_LIST.index(x)][reach_mat_dest_taxa_clust_idx] == 1):
@@ -229,7 +216,6 @@ def Possible_Conflict_Curr_Reln(src_taxa_idx, dest_taxa_idx, Reachability_Graph_
 		"""
 		src_clust_out_neighb = []
 		src_clust_out_neighb.append(src_taxa_clust_idx)
-		#src_clust_out_neighb.extend(Cluster_Info_Dict[src_taxa_clust_idx]._GetOutEdgeList())
 		src_clust_out_neighb.extend(Cluster_Info_Dict[src_taxa_clust_idx]._GetClustRelnList(RELATION_R1))
 		
 		"""
@@ -238,7 +224,6 @@ def Possible_Conflict_Curr_Reln(src_taxa_idx, dest_taxa_idx, Reachability_Graph_
 		"""
 		dest_clust_out_neighb = []
 		dest_clust_out_neighb.append(dest_taxa_clust_idx)
-		#dest_clust_out_neighb.extend(Cluster_Info_Dict[dest_taxa_clust_idx]._GetOutEdgeList())
 		dest_clust_out_neighb.extend(Cluster_Info_Dict[dest_taxa_clust_idx]._GetClustRelnList(RELATION_R1))
 		
 		"""
