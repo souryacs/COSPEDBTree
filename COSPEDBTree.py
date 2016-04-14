@@ -302,9 +302,10 @@ def main():
 	now process individual trees to find the couplet relations within those trees
 	"""
 	for tr_idx in range(len(Input_Treelist)):
-		DeriveCoupletRelations(Input_Treelist[tr_idx], WEIGHT_TAXA_SUBSET, tr_idx)
+		DeriveCoupletRelations(Input_Treelist[tr_idx], WEIGHT_TAXA_SUBSET)
 
-	data_read_timestamp3 = time.time()	# note the timestamp
+	# note the timestamp
+	data_read_timestamp3 = time.time()
 	
 	if (DEBUG_LEVEL >= 0):
 		fp_time.write('\n Time taken to read the couplet relations: ' + str(data_read_timestamp3 - data_read_timestamp2))
@@ -331,6 +332,23 @@ def main():
 
 	#------------------------------------------------------------
 	""" 
+	we initialize the Reachability_Graph_Mat
+	dimension: N X N where N = number of taxa clusters = number of taxa (initially)
+	this is a numpy 2D array 
+	values Mat[x][y] = 1 means x->y
+	Mat[x][y] = Mat[y][x] = 2 means x and y are connected via relation r4
+	as taxa subsets are clustered, no of distinct taxa clusters reduces
+	so, this matrix dimension is also decreased
+	"""
+	Reachability_Graph_Mat = numpy.zeros((number_of_taxa, number_of_taxa), dtype=numpy.int)
+	if (DEBUG_LEVEL > 0):
+		fp = open(Output_Text_File, 'a')
+		fp.write('\n shape of Reachability_Graph_Mat: ' + str(numpy.shape(Reachability_Graph_Mat)))
+		fp.write('\n length of conflicting priority queue : ' + str(len(Cost_List_Taxa_Pair_Multi_Reln)))
+		fp.close()
+
+	#------------------------------------------------------------
+	""" 
 	here, we process all the couplets
 	individual couplets lead to individual cluster pairs
 	for individual relations between a couplet, corresponding edge between the cluster pair is established
@@ -346,6 +364,9 @@ def main():
 		#single_edge_exist = single_edge_exist_list[0]
 		#consensus_reln_type = single_edge_exist_list[1]
 		
+		"""
+		maximum frequency among all 4 relations
+		"""
 		max_freq = TaxaPair_Reln_Dict[l]._GetConsensusFreq()
 
 		"""
@@ -360,11 +381,12 @@ def main():
 		"""
 		TaxaPair_Reln_Dict[l]._SetCostMetric()
 
-		"""
-		this is a boolean variable signifying the condition to include the relation R3
-		as a candidate relation for this couplet
-		"""
-		non_r3_reln_included = False
+		##-------------------------------------------------
+		#"""
+		#this is a boolean variable signifying the condition to include the relation R3
+		#as a candidate relation for this couplet
+		#"""
+		#non_r3_reln_included = False
 
 		#"""
 		#for a particular couplet, we select the relations having > 0 frequency
@@ -384,152 +406,122 @@ def main():
 			#Taxa_Info_Dict[l[1]]._AddAllowedReln(RELATION_R4, l[0])
 			#continue
 		
-		if (TaxaPair_Reln_Dict[l]._GetEdgeWeight(RELATION_R4) >= (0.7 * max_freq)):	# > 0):
-			"""
-			R4 relation exists between this couplet, 
-			we only insert this score, and ignore other relations
-			support score measure - add this score in the queue
-			Note: we have only one queue for processing support scores
-			"""
-			support_score = TaxaPair_Reln_Dict[l]._GetEdgeCost_ConnReln(RELATION_R4)
-			sublist = [l[0], l[1], RELATION_R4, support_score]
-			Cost_List_Taxa_Pair_Multi_Reln.append(sublist)
-			TaxaPair_Reln_Dict[l]._AddAllowedReln(RELATION_R4)
-			Taxa_Info_Dict[l[0]]._AddAllowedReln(RELATION_R4, l[1])
-			Taxa_Info_Dict[l[1]]._AddAllowedReln(RELATION_R4, l[0])
-			non_r3_reln_included = True
+		#if (TaxaPair_Reln_Dict[l]._GetEdgeWeight(RELATION_R4) >= (0.7 * max_freq)):	# > 0):
+			#"""
+			#R4 relation exists between this couplet, 
+			#we only insert this score, and ignore other relations
+			#support score measure - add this score in the queue
+			#Note: we have only one queue for processing support scores
+			#"""
+			#support_score = TaxaPair_Reln_Dict[l]._GetEdgeCost_ConnReln(RELATION_R4)
+			#sublist = [l[0], l[1], RELATION_R4, support_score]
+			#Cost_List_Taxa_Pair_Multi_Reln.append(sublist)
+			#TaxaPair_Reln_Dict[l]._AddAllowedReln(RELATION_R4)
+			#Taxa_Info_Dict[l[0]]._AddAllowedReln(RELATION_R4, l[1])
+			#Taxa_Info_Dict[l[1]]._AddAllowedReln(RELATION_R4, l[0])
+			#non_r3_reln_included = True
 
-		"""
-		Otherwise, we inspect R1 or R2 relations and insert for non zero frequency 
-		or a considerable frequency
-		"""
-		if (TaxaPair_Reln_Dict[l]._GetEdgeWeight(RELATION_R1) >= (0.7 * max_freq)):	# > 0):
-			support_score = TaxaPair_Reln_Dict[l]._GetEdgeCost_ConnReln(RELATION_R1)
-			sublist = [l[0], l[1], RELATION_R1, support_score]
-			Cost_List_Taxa_Pair_Multi_Reln.append(sublist)
-			TaxaPair_Reln_Dict[l]._AddAllowedReln(RELATION_R1)
-			Taxa_Info_Dict[l[0]]._AddAllowedReln(RELATION_R1, l[1])
-			Taxa_Info_Dict[l[1]]._AddAllowedReln(RELATION_R2, l[0])
-			non_r3_reln_included = True
+		#"""
+		#Otherwise, we inspect R1 or R2 relations and insert for non zero frequency 
+		#or a considerable frequency
+		#"""
+		#if (TaxaPair_Reln_Dict[l]._GetEdgeWeight(RELATION_R1) >= (0.7 * max_freq)):	# > 0):
+			#support_score = TaxaPair_Reln_Dict[l]._GetEdgeCost_ConnReln(RELATION_R1)
+			#sublist = [l[0], l[1], RELATION_R1, support_score]
+			#Cost_List_Taxa_Pair_Multi_Reln.append(sublist)
+			#TaxaPair_Reln_Dict[l]._AddAllowedReln(RELATION_R1)
+			#Taxa_Info_Dict[l[0]]._AddAllowedReln(RELATION_R1, l[1])
+			#Taxa_Info_Dict[l[1]]._AddAllowedReln(RELATION_R2, l[0])
+			#non_r3_reln_included = True
 		
-		if (TaxaPair_Reln_Dict[l]._GetEdgeWeight(RELATION_R2) >= (0.7 * max_freq)):	# > 0):
-			support_score = TaxaPair_Reln_Dict[l]._GetEdgeCost_ConnReln(RELATION_R2)
-			sublist = [l[0], l[1], RELATION_R2, support_score]
-			Cost_List_Taxa_Pair_Multi_Reln.append(sublist)
-			TaxaPair_Reln_Dict[l]._AddAllowedReln(RELATION_R2)
-			Taxa_Info_Dict[l[0]]._AddAllowedReln(RELATION_R2, l[1])
-			Taxa_Info_Dict[l[1]]._AddAllowedReln(RELATION_R1, l[0])
-			non_r3_reln_included = True
+		#if (TaxaPair_Reln_Dict[l]._GetEdgeWeight(RELATION_R2) >= (0.7 * max_freq)):	# > 0):
+			#support_score = TaxaPair_Reln_Dict[l]._GetEdgeCost_ConnReln(RELATION_R2)
+			#sublist = [l[0], l[1], RELATION_R2, support_score]
+			#Cost_List_Taxa_Pair_Multi_Reln.append(sublist)
+			#TaxaPair_Reln_Dict[l]._AddAllowedReln(RELATION_R2)
+			#Taxa_Info_Dict[l[0]]._AddAllowedReln(RELATION_R2, l[1])
+			#Taxa_Info_Dict[l[1]]._AddAllowedReln(RELATION_R1, l[0])
+			#non_r3_reln_included = True
 		
+		#"""
+		#Otherwise, we check whether R3 relation exists between this couplet
+		#and no instance of R1 or R2 relation exists
+		#in such a case, we insert R3 relation and corresponding support score in the queue
+		#"""
+		#if (non_r3_reln_included == False):
+			#if (TaxaPair_Reln_Dict[l]._CheckTargetRelnConsensus(RELATION_R3)):
+				#support_score = TaxaPair_Reln_Dict[l]._GetEdgeCost_ConnReln(RELATION_R3)
+				#sublist = [l[0], l[1], RELATION_R3, support_score]
+				#Cost_List_Taxa_Pair_Multi_Reln.append(sublist)
+				#TaxaPair_Reln_Dict[l]._AddAllowedReln(RELATION_R3)
+				#Taxa_Info_Dict[l[0]]._AddAllowedReln(RELATION_R3, l[1])
+				#Taxa_Info_Dict[l[1]]._AddAllowedReln(RELATION_R3, l[0])
+
+		#---------------------------------------------
 		"""
-		Otherwise, we check whether R3 relation exists between this couplet
-		and no instance of R1 or R2 relation exists
-		in such a case, we insert R3 relation and corresponding support score in the queue
+		for a particular couplet:
+		1) we select the R3 relation if it is a consensus relation
+		2) other relations are selected only if they have 70% of the frequency of the consensus relation
 		"""
-		if 1:	#(non_r3_reln_included == False):
-			if (TaxaPair_Reln_Dict[l]._CheckTargetRelnConsensus(RELATION_R3)):
-				support_score = TaxaPair_Reln_Dict[l]._GetEdgeCost_ConnReln(RELATION_R3)
-				sublist = [l[0], l[1], RELATION_R3, support_score]
+		for reln_type in range(4):
+			if ((reln_type != RELATION_R3) and (TaxaPair_Reln_Dict[l]._GetEdgeWeight(reln_type) >= (0.7 * max_freq))) or \
+				((reln_type == RELATION_R3) and (TaxaPair_Reln_Dict[l]._CheckTargetRelnConsensus(reln_type))):
+				## comment - sourya
+				support_score = TaxaPair_Reln_Dict[l]._GetEdgeCost_ConnReln(reln_type)
+				sublist = [l[0], l[1], reln_type, support_score]
 				Cost_List_Taxa_Pair_Multi_Reln.append(sublist)
-				TaxaPair_Reln_Dict[l]._AddAllowedReln(RELATION_R3)
-				Taxa_Info_Dict[l[0]]._AddAllowedReln(RELATION_R3, l[1])
-				Taxa_Info_Dict[l[1]]._AddAllowedReln(RELATION_R3, l[0])
+				## end comment - sourya
+				TaxaPair_Reln_Dict[l]._AddAllowedReln(reln_type)
+				Taxa_Info_Dict[l[0]]._AddAllowedReln(reln_type, l[1])
+				Taxa_Info_Dict[l[1]]._AddAllowedReln(Complementary_Reln(reln_type), l[0])
+
 	#------------------------------------------------------------
 	"""
 	we print the information for individual couplets
 	"""
-	if (DEBUG_LEVEL >= 2):
+	if (DEBUG_LEVEL > 2):
 		for l in TaxaPair_Reln_Dict:
 			#print 'printing info for the TaxaPair_Reln_Dict key: ', l
 			TaxaPair_Reln_Dict[l]._PrintRelnInfo(l, Output_Text_File)
 	
-	## print the cluster information 
-	#if (DEBUG_LEVEL > 0):
-		#fp = open(Output_Text_File, 'a')
-		#fp.write('\n **** total number of clusters: ' + str(len(CURRENT_CLUST_IDX_LIST)))
-		#fp.write('\n CURRENT_CLUST_IDX_LIST contents: ')
-		#fp.write(str(CURRENT_CLUST_IDX_LIST))
-		#fp.write('\n ========== cluster information after COUPLET RELATION ANALYSIS =============')
-		#fp.close()
-		#for i in Cluster_Info_Dict:
-			##print 'printing the information for cluster node: ', i
-			#Cluster_Info_Dict[i]._PrintClusterInfo(i, Output_Text_File)
-	
-	#"""
-	#process individual clusters and delete all the redundant edges
-	#"""
-	#DelRedundantReln(Output_Text_File)
-	
-	## print the cluster information 
-	#if (DEBUG_LEVEL > 0):
-		#fp = open(Output_Text_File, 'a')
-		#fp.write('\n **** total number of clusters: ' + str(len(CURRENT_CLUST_IDX_LIST)))
-		#fp.write('\n CURRENT_CLUST_IDX_LIST contents: ')
-		#fp.write(str(CURRENT_CLUST_IDX_LIST))
-		#fp.write('\n ========== cluster information after DELETE REDUNDANT INFORMATION =============')
-		#fp.close()
-		#for i in Cluster_Info_Dict:
-			##print 'printing the information for cluster node: ', i
-			#Cluster_Info_Dict[i]._PrintClusterInfo(i, Output_Text_File)
-	
-	##"""
-	##apply transitive closure operation to the cluster connectivity
-	##"""
-	##Transitive_Closure_Cluster_Connectivity(Output_Text_File)
-
-	### print the cluster information 
-	##if (DEBUG_LEVEL > 0):
-		##fp = open(Output_Text_File, 'a')
-		##fp.write('\n **** total number of clusters: ' + str(len(CURRENT_CLUST_IDX_LIST)))
-		##fp.write('\n CURRENT_CLUST_IDX_LIST contents: ')
-		##fp.write(str(CURRENT_CLUST_IDX_LIST))
-		##fp.write('\n ========== cluster information after Transitive_Closure_Cluster_Connectivity =============')
-		##fp.close()
-		##for i in Cluster_Info_Dict:
-			###print 'printing the information for cluster node: ', i
-			##Cluster_Info_Dict[i]._PrintClusterInfo(i, Output_Text_File)
-
-	
-	##"""
-	##now delete few more relations from the support score queue
-	##"""
-	##DelRelnMore(Output_Text_File)
-	
 	##------------------------------------------------------------
-	## add - sourya
 	#"""
-	#create a copy of the cluster dictionary obtained so far
-	#and free the contents of cluster dictionary  
+	#this is a loop, in which, every iteration, we find the taxa with minimum indegree within the list of input taxa
 	#"""
-	#Cluster_Info_Dict_Copy = Cluster_Info_Dict.copy()
-	#for cl in Cluster_Info_Dict:
-		#Cluster_Info_Dict[cl]._ResetItems()
-	## end add - sourya
-	#------------------------------------------------------------
-	""" 
-	we initialize the Reachability_Graph_Mat
-	dimension: N X N where N = number of taxa clusters = number of taxa (initially)
-	this is a numpy 2D array 
-	values Mat[x][y] = 1 means x->y
-	Mat[x][y] = Mat[y][x] = 2 means x and y are connected via relation r4
-	as taxa subsets are clustered, no of distinct taxa clusters reduces
-	so, this matrix dimension is also decreased
-	"""
-	Reachability_Graph_Mat = numpy.zeros((number_of_taxa, number_of_taxa), dtype=numpy.int)
-	if (DEBUG_LEVEL > 0):
-		fp = open(Output_Text_File, 'a')
-		fp.write('\n shape of Reachability_Graph_Mat: ' + str(numpy.shape(Reachability_Graph_Mat)))
-		fp.write('\n length of conflicting priority queue : ' + str(len(Cost_List_Taxa_Pair_Multi_Reln)))
-		fp.close()
-	#------------------------------------------------------------
-	# add - sourya
-	"""
-	here we check for the couplets which have R4 as their only supported relation
-	we include R4 relation between them
-	"""
-	#Process_Include_R4_Reln(Reachability_Graph_Mat, Output_Text_File)
-	# end add - sourya
-	#------------------------------------------------------------
+	#Input_Taxa_List = range(len(COMPLETE_INPUT_TAXA_LIST))
+	#while (len(Input_Taxa_List) > 0):
+		#"""
+		#find the min indegree taxa
+		#"""
+		#Min_Indeg_Taxa = Get_Minimum_Indegree_Taxa(Input_Taxa_List)
+		#if (DEBUG_LEVEL >= 2):
+			#fp = open(Output_Text_File, 'a')
+			#fp.write('\n\n Current Min_Indeg_Taxa: ' + str(Min_Indeg_Taxa) + '  Its label: ' + str(COMPLETE_INPUT_TAXA_LIST[Min_Indeg_Taxa]))
+			#fp.close()
+		#"""
+		#We process this taxa, by processing all its allowed R1 to R4 candidates
+		#"""
+		#Reachability_Graph_Mat = Process_Single_Taxa(Min_Indeg_Taxa, Reachability_Graph_Mat, Output_Text_File)
+		
+		#"""
+		#at last, remove the taxa from the Input_Taxa_List
+		#"""
+		#Input_Taxa_List.remove(Min_Indeg_Taxa)
+	##------------------------------------------------------------
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
 	""" 
 	sort the priority queues according to the support score value of individual relations
 	4th field of individual sublist denotes the support score
@@ -808,7 +800,6 @@ def main():
 	Cluster_Info_Dict.clear()
 	Taxa_Info_Dict.clear()
 	TaxaPair_Reln_Dict.clear()
-	#Cluster_Info_Dict_Copy.clear()	# add - sourya
 
 	## clear the lists associated
 	if (len(Cost_List_Taxa_Pair_Multi_Reln) > 0):

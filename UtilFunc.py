@@ -147,9 +147,8 @@ the relationship is either ancestor / descendant, or siblings, or no relationshi
 	xl_val: excess gene count (normalized) between this couplet
 	lca_level: level of the LCA node of this couplet
 	curr_tree_taxa: set of taxa belonging to the current gene tree (indices of taxon)
-	tr_idx: Index of the input tree
 """
-def DefineLeafPairReln(xl_val, lca_level, lca_rank, node1, node2, reln_type, curr_tree_taxa, wt_taxa_subset, tr_idx):
+def DefineLeafPairReln(xl_val, lca_level, lca_rank, node1, node2, reln_type, curr_tree_taxa, wt_taxa_subset):
 
 	"""
 	compute the levels of individual nodes
@@ -198,7 +197,7 @@ def DefineLeafPairReln(xl_val, lca_level, lca_rank, node1, node2, reln_type, cur
 
 	TaxaPair_Reln_Dict[target_key]._AddSupportingTree()
 	TaxaPair_Reln_Dict[target_key]._AddXLVal(xl_val / intersect_ratio)
-	TaxaPair_Reln_Dict[target_key]._AddEdgeCount(target_reln_type, tr_idx, intersect_ratio)
+	TaxaPair_Reln_Dict[target_key]._AddEdgeCount(target_reln_type, intersect_ratio)
 	TaxaPair_Reln_Dict[target_key]._AddLevel(sum_of_branch_count)
 	return
 
@@ -209,9 +208,8 @@ that is provided as an input argument to this function
 @parameters:  
 	WEIGHT_TAXA_SUBSET: If True, the relation takes care of the 
 											set of taxa underlying the LCA node for this couplet
-	tr_idx: Index of the input tree (starting from 0 to ntrees - 1)
 """
-def DeriveCoupletRelations(Curr_tree, WEIGHT_TAXA_SUBSET, tr_idx):
+def DeriveCoupletRelations(Curr_tree, WEIGHT_TAXA_SUBSET):
   
 	"""
 	taxa set of the current tree, and also the count of taxa
@@ -260,7 +258,7 @@ def DeriveCoupletRelations(Curr_tree, WEIGHT_TAXA_SUBSET, tr_idx):
 				for j in range(i+1, len(curr_node_child_leaf_nodes)):
 					DefineLeafPairReln(xl_val, curr_node_level, curr_node_rank, \
 						curr_node_child_leaf_nodes[i], curr_node_child_leaf_nodes[j], \
-						RELATION_R3, curr_tree_taxa, WEIGHT_TAXA_SUBSET, tr_idx)
+						RELATION_R3, curr_tree_taxa, WEIGHT_TAXA_SUBSET)
 		
 		"""
 		one leaf node (direct descendant) and another leaf node (under one internal node)
@@ -271,7 +269,7 @@ def DeriveCoupletRelations(Curr_tree, WEIGHT_TAXA_SUBSET, tr_idx):
 				for q in curr_node_child_internal_nodes:
 					for r in q.leaf_nodes():
 						DefineLeafPairReln(xl_val, curr_node_level, curr_node_rank, p, r, RELATION_R1, \
-							curr_tree_taxa, WEIGHT_TAXA_SUBSET, tr_idx)
+							curr_tree_taxa, WEIGHT_TAXA_SUBSET)
 		
 		"""
 		finally a pair of leaf nodes which are descendant 
@@ -283,7 +281,7 @@ def DeriveCoupletRelations(Curr_tree, WEIGHT_TAXA_SUBSET, tr_idx):
 					for j in range(i+1, len(curr_node_child_internal_nodes)):
 						for q in curr_node_child_internal_nodes[j].leaf_nodes():
 							DefineLeafPairReln(xl_val, curr_node_level, curr_node_rank, p, q, RELATION_R4, \
-								curr_tree_taxa, WEIGHT_TAXA_SUBSET, tr_idx)
+								curr_tree_taxa, WEIGHT_TAXA_SUBSET)
 
 #--------------------------------------------------------
 """
@@ -567,3 +565,28 @@ def FindAvgInternodeCount(taxa_clust1, taxa_clust2, single_elem=2, type_of_outpu
 			#return min(curr_taxa_pair_list)
 	else:
 		return 0
+	
+#----------------------------------------------------------------
+"""
+returns the taxa having minimum in degree
+"""
+def Get_Minimum_Indegree_Taxa(Input_Taxa_List):
+	min_indeg = Taxa_Info_Dict[Input_Taxa_List[0]]._GetAllowedInDegree()
+	min_idx = 0
+	min_idx_outdeg = Taxa_Info_Dict[Input_Taxa_List[0]]._GetAllowedOutDegree()
+	for i in range(1, len(Input_Taxa_List)):
+		curr_indeg = Taxa_Info_Dict[Input_Taxa_List[i]]._GetAllowedInDegree()
+		curr_outdeg = Taxa_Info_Dict[Input_Taxa_List[i]]._GetAllowedOutDegree()
+		if (curr_indeg < min_indeg):
+			min_indeg = curr_indeg
+			min_idx = i
+			min_idx_outdeg = curr_outdeg
+		elif (curr_indeg == min_indeg):
+			if (curr_outdeg > min_idx_outdeg):
+				min_idx = i
+				min_idx_outdeg = curr_outdeg
+				
+	return Input_Taxa_List[min_idx]
+
+
+

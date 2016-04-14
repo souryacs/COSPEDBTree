@@ -103,6 +103,42 @@ class Single_Taxa(object):
 		
 	def _GetAllowedRelnSet(self, reln_type):
 		return self.Allowed_Reln_List[reln_type]
+
+	"""
+	this function checks whether the "inp_taxa_idx" is connected to this taxa 
+	via "inp_reln" only, and no other relation
+	"""
+	def _CheckSingleAllowedReln(self, inp_taxa_idx, inp_reln):
+		if inp_taxa_idx not in self.Allowed_Reln_List[inp_reln]:
+			return False
+		for reln_type in range(4):
+			if (reln_type == inp_reln):
+				continue
+			if inp_taxa_idx in self.Allowed_Reln_List[reln_type]:
+				return False
+		return True
+	
+	"""
+	returns the allowed_in_degree - no of taxa allowed for R2 and R3 relations
+	"""
+	def _GetAllowedInDegree(self):
+		r2_count = len(self.Allowed_Reln_List[RELATION_R2]) + len(self.Allowed_Reln_List[RELATION_R3])
+		r1_count = len(self.Allowed_Reln_List[RELATION_R1]) + len(self.Allowed_Reln_List[RELATION_R3]) + len(self.Allowed_Reln_List[RELATION_R4])
+		if (r1_count > 0):
+			return (r2_count * 1.0) / r1_count
+		else:
+			return 0
+
+	"""
+	returns the allowed_out_degree - no of taxa allowed for R2 and R3 relations
+	"""
+	def _GetAllowedOutDegree(self):
+		r2_count = len(self.Allowed_Reln_List[RELATION_R2]) + len(self.Allowed_Reln_List[RELATION_R3])
+		r1_count = len(self.Allowed_Reln_List[RELATION_R1]) + len(self.Allowed_Reln_List[RELATION_R3]) + len(self.Allowed_Reln_List[RELATION_R4])
+		if (r2_count > 0):
+			return (r1_count * 1.0) / r2_count
+		else:
+			return 0
 	
 	# this function is called after formation of consensus tree
 	def _PrintFinalTaxaInfo(self, key, Output_Text_File):
@@ -161,18 +197,6 @@ class Reln_TaxaPair(object):
 		computed for all the gene trees supported by this couplet
 		"""
 		self.sum_internode_count = 0
-		#""" 
-		#frequencies of individual relations 
-		#there are 4 types of edges (relationship) between a pair of taxa 
-		#"""
-		#self.freq_instance = [0] * 4
-		#"""
-		#this is a collection of 4 different lists of variable size
-		#individual lists represent R1 to R4 relation
-		#contents of a list are the tree indices supporting the occurrence of one particular relation
-		#*** Note: initialization of the list with empty sublists - this is the standard syntax ****
-		#"""
-		#self.Tree_Reln_List = [[] for i in range(4)]
 		"""
 		allowed relation list which are included in the support score queue
 		"""
@@ -346,17 +370,8 @@ class Reln_TaxaPair(object):
 	this function adds a specified frequency count (default 1)
 	corresponding to the relation specified by the variable 'reln_type'
 	"""
-	def _AddEdgeCount(self, reln_type, tr_idx, val=1):
+	def _AddEdgeCount(self, reln_type, val=1):
 		self.freq_count[reln_type] = self.freq_count[reln_type] + val
-		## add - sourya
-		#self.freq_instance[reln_type] = self.freq_instance[reln_type] + 1
-		## add - sourya
-		#self.Tree_Reln_List[reln_type].append(tr_idx)
-	
-	#def _NormalizeFreq(self):
-		#for reln_type in range(4):
-			#if (self.freq_count[reln_type] > 0):
-				#self.freq_count[reln_type] = (self.freq_count[reln_type] * 1.0) / self.freq_instance[reln_type]
 	
 	#----------------------------------
 	""" 
@@ -440,17 +455,15 @@ class Reln_TaxaPair(object):
 	"""
 	def _PrintRelnInfo(self, key, Output_Text_File):
 		fp = open(Output_Text_File, 'a')    
-		fp.write('\n\n\n taxa pair key: ' + str(key) + ' couplet:  ' + str(COMPLETE_INPUT_TAXA_LIST[key[0]]) + '  and ' + str(COMPLETE_INPUT_TAXA_LIST[key[1]]))
+		fp.write('\n\n\n taxa pair key: ' + str(key) + ' couplet:  ' + str(COMPLETE_INPUT_TAXA_LIST[key[0]]) \
+			+ '  and ' + str(COMPLETE_INPUT_TAXA_LIST[key[1]]))
 		fp.write('\n relations [type/count/priority_reln/score]: ')
 		for i in range(4):
-			fp.write('\n [' + str(i) + '/' + str(self.freq_count[i]) + '/' + str(self.priority_reln[i]) + '/' + str(self.support_score[i]) + ']')
+			fp.write('\n [' + str(i) + '/' + str(self.freq_count[i]) + '/' + str(self.priority_reln[i]) \
+				+ '/' + str(self.support_score[i]) + ']')
 		fp.write('\n AVERAGE Sum of excess gene **** : ' + str(self._GetAvgXLGeneTrees()))
 		fp.write('\n No of supporting trees : ' + str(self.supporting_trees))
 		fp.write('\n Average sum of internode count : ' + str(self._GetAvgSumLevel()))    
-		#fp.write('\n R1 relation occurring trees: ' + str(self.Tree_Reln_List[RELATION_R1]))
-		#fp.write('\n R2 relation occurring trees: ' + str(self.Tree_Reln_List[RELATION_R2]))
-		#fp.write('\n R3 relation occurring trees: ' + str(self.Tree_Reln_List[RELATION_R3]))
-		#fp.write('\n R4 relation occurring trees: ' + str(self.Tree_Reln_List[RELATION_R4]))
 		fp.close()
 	
 #-----------------------------------------------------
@@ -480,17 +493,6 @@ class Cluster_node(object):
 		if inp_taxa is not None:
 			self._Append_taxa(inp_taxa)    
 
-	#def _ResetItems(self):
-		#self.explored = 0
-		#self.out_edge_list[:] = []
-		#self.out_edge_list = []
-		#self.in_edge_list[:] = []
-		#self.in_edge_list = []
-		#self.no_edge_list[:] = []
-		#self.no_edge_list = []
-		#self.eq_edge_list[:] = []
-		#self.eq_edge_list = []
-	
 	#---------------------------------------------
 	"""
 	these functions keep track whether the cluster node is used 
