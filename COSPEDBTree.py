@@ -115,13 +115,14 @@ def parse_options():
 				if TRUE, then this option weighs couplet statistics according \
 				to the size of taxa subset underlying MRCA of that couplet")  
 
-	parser.add_option("-x", "--mppsolvemetric", \
-				type="int", \
-				action="store", \
-				dest="MPP_solve_metric", \
-				default=2, \
-				help="1 - Use priority measure based selection (higher value)\
-				2 - Use XL based selection (lower value)")     
+	#parser.add_option("-x", "--mppsolvemetric", \
+				#type="int", \
+				#action="store", \
+				#dest="MPP_solve_metric", \
+				#default=2, \
+				#help="1 - Use priority measure based selection (higher value)\
+				#2 - Use XL based selection (lower value) \
+				#3 - Use Internode count based selection (lower value)")     
 
 	parser.add_option("-d", "--distmat", \
 				type="int", \
@@ -154,7 +155,7 @@ def main():
 	BINARY_SUPERTREE_OPTION = opts.binary_suptr
 	NJ_RULE_USED = opts.NJ_type 
 	WEIGHT_TAXA_SUBSET = opts.weight_taxa_subset
-	MPP_SOLVE_METRIC = 2	#opts.MPP_solve_metric
+	#MPP_SOLVE_METRIC = opts.MPP_solve_metric
 	DIST_MAT_TYPE = opts.dist_mat_type
 	NJ_MERGE_CLUST = 1
 
@@ -197,6 +198,7 @@ def main():
 			dir_of_curr_exec = dir_of_curr_exec + '_W_1'
 		else:
 			dir_of_curr_exec = dir_of_curr_exec + '_W_0'
+		#dir_of_curr_exec = dir_of_curr_exec + '_X_' + str(MPP_SOLVE_METRIC)
 		if (BINARY_SUPERTREE_OPTION == True):
 			dir_of_curr_exec = dir_of_curr_exec + '_N_' + str(NJ_RULE_USED) + '_D_' + str(DIST_MAT_TYPE)
 		""" 
@@ -341,12 +343,6 @@ def main():
 	so, this matrix dimension is also decreased
 	"""
 	Reachability_Graph_Mat = numpy.zeros((number_of_taxa, number_of_taxa), dtype=numpy.int)
-	if (DEBUG_LEVEL > 0):
-		fp = open(Output_Text_File, 'a')
-		fp.write('\n shape of Reachability_Graph_Mat: ' + str(numpy.shape(Reachability_Graph_Mat)))
-		fp.write('\n length of conflicting priority queue : ' + str(len(Cost_List_Taxa_Pair_Multi_Reln)))
-		fp.close()
-
 	#------------------------------------------------------------
 	""" 
 	here, we process all the couplets
@@ -381,179 +377,151 @@ def main():
 		"""
 		TaxaPair_Reln_Dict[l]._SetCostMetric()
 
-		##-------------------------------------------------
-		#"""
-		#this is a boolean variable signifying the condition to include the relation R3
-		#as a candidate relation for this couplet
-		#"""
-		#non_r3_reln_included = False
-
-		#"""
-		#for a particular couplet, we select the relations having > 0 frequency
-		#to insert in the support score queue
-		#also we employ selection operation to insert only the feasible relations
-		#"""
-		#if (TaxaPair_Reln_Dict[l]._CheckTargetRelnConsensus(RELATION_R4) == True):
-			#"""
-			#R4 relation is consensus between the couplet
-			#so no other relation is required
-			#"""
-			#support_score = TaxaPair_Reln_Dict[l]._GetEdgeCost_ConnReln(RELATION_R4)
-			#sublist = [l[0], l[1], RELATION_R4, support_score]
-			#Cost_List_Taxa_Pair_Multi_Reln.append(sublist)
-			#TaxaPair_Reln_Dict[l]._AddAllowedReln(RELATION_R4)
-			#Taxa_Info_Dict[l[0]]._AddAllowedReln(RELATION_R4, l[1])
-			#Taxa_Info_Dict[l[1]]._AddAllowedReln(RELATION_R4, l[0])
-			#continue
-		
-		#if (TaxaPair_Reln_Dict[l]._GetEdgeWeight(RELATION_R4) >= (0.7 * max_freq)):	# > 0):
-			#"""
-			#R4 relation exists between this couplet, 
-			#we only insert this score, and ignore other relations
-			#support score measure - add this score in the queue
-			#Note: we have only one queue for processing support scores
-			#"""
-			#support_score = TaxaPair_Reln_Dict[l]._GetEdgeCost_ConnReln(RELATION_R4)
-			#sublist = [l[0], l[1], RELATION_R4, support_score]
-			#Cost_List_Taxa_Pair_Multi_Reln.append(sublist)
-			#TaxaPair_Reln_Dict[l]._AddAllowedReln(RELATION_R4)
-			#Taxa_Info_Dict[l[0]]._AddAllowedReln(RELATION_R4, l[1])
-			#Taxa_Info_Dict[l[1]]._AddAllowedReln(RELATION_R4, l[0])
-			#non_r3_reln_included = True
-
-		#"""
-		#Otherwise, we inspect R1 or R2 relations and insert for non zero frequency 
-		#or a considerable frequency
-		#"""
-		#if (TaxaPair_Reln_Dict[l]._GetEdgeWeight(RELATION_R1) >= (0.7 * max_freq)):	# > 0):
-			#support_score = TaxaPair_Reln_Dict[l]._GetEdgeCost_ConnReln(RELATION_R1)
-			#sublist = [l[0], l[1], RELATION_R1, support_score]
-			#Cost_List_Taxa_Pair_Multi_Reln.append(sublist)
-			#TaxaPair_Reln_Dict[l]._AddAllowedReln(RELATION_R1)
-			#Taxa_Info_Dict[l[0]]._AddAllowedReln(RELATION_R1, l[1])
-			#Taxa_Info_Dict[l[1]]._AddAllowedReln(RELATION_R2, l[0])
-			#non_r3_reln_included = True
-		
-		#if (TaxaPair_Reln_Dict[l]._GetEdgeWeight(RELATION_R2) >= (0.7 * max_freq)):	# > 0):
-			#support_score = TaxaPair_Reln_Dict[l]._GetEdgeCost_ConnReln(RELATION_R2)
-			#sublist = [l[0], l[1], RELATION_R2, support_score]
-			#Cost_List_Taxa_Pair_Multi_Reln.append(sublist)
-			#TaxaPair_Reln_Dict[l]._AddAllowedReln(RELATION_R2)
-			#Taxa_Info_Dict[l[0]]._AddAllowedReln(RELATION_R2, l[1])
-			#Taxa_Info_Dict[l[1]]._AddAllowedReln(RELATION_R1, l[0])
-			#non_r3_reln_included = True
-		
-		#"""
-		#Otherwise, we check whether R3 relation exists between this couplet
-		#and no instance of R1 or R2 relation exists
-		#in such a case, we insert R3 relation and corresponding support score in the queue
-		#"""
-		#if (non_r3_reln_included == False):
-			#if (TaxaPair_Reln_Dict[l]._CheckTargetRelnConsensus(RELATION_R3)):
-				#support_score = TaxaPair_Reln_Dict[l]._GetEdgeCost_ConnReln(RELATION_R3)
-				#sublist = [l[0], l[1], RELATION_R3, support_score]
-				#Cost_List_Taxa_Pair_Multi_Reln.append(sublist)
-				#TaxaPair_Reln_Dict[l]._AddAllowedReln(RELATION_R3)
-				#Taxa_Info_Dict[l[0]]._AddAllowedReln(RELATION_R3, l[1])
-				#Taxa_Info_Dict[l[1]]._AddAllowedReln(RELATION_R3, l[0])
-
 		#---------------------------------------------
-		"""
-		for a particular couplet:
-		1) we select the R3 relation if it is a consensus relation
-		2) other relations are selected only if they have 70% of the frequency of the consensus relation
-		"""
+		# old method - sourya
+		
 		for reln_type in range(4):
+			#curr_reln_freq = TaxaPair_Reln_Dict[l]._GetEdgeWeight(reln_type)
+			#if (curr_reln_freq > 0):
 			if ((reln_type != RELATION_R3) and (TaxaPair_Reln_Dict[l]._GetEdgeWeight(reln_type) >= (0.7 * max_freq))) or \
 				((reln_type == RELATION_R3) and (TaxaPair_Reln_Dict[l]._CheckTargetRelnConsensus(reln_type))):
-				## comment - sourya
-				support_score = TaxaPair_Reln_Dict[l]._GetEdgeCost_ConnReln(reln_type)
-				sublist = [l[0], l[1], reln_type, support_score]
-				Cost_List_Taxa_Pair_Multi_Reln.append(sublist)
-				## end comment - sourya
 				TaxaPair_Reln_Dict[l]._AddAllowedReln(reln_type)
 				Taxa_Info_Dict[l[0]]._AddAllowedReln(reln_type, l[1])
 				Taxa_Info_Dict[l[1]]._AddAllowedReln(Complementary_Reln(reln_type), l[0])
+				support_score = TaxaPair_Reln_Dict[l]._GetEdgeCost_ConnReln(reln_type)
+				sublist = [l[0], l[1], reln_type, support_score]
+				Queue_Score_Conflict_Couplet.append(sublist)
+		
 
+		#---------------------------------------------
+		## new method - sourya
+		
+		#"""
+		#for a particular couplet:
+		#1) we select the R3 relation if it is a consensus relation
+		#2) other relations are selected only if they have 70% of the frequency of the consensus relation
+		#"""
+		#for reln_type in range(4):
+			##curr_reln_freq = TaxaPair_Reln_Dict[l]._GetEdgeWeight(reln_type)
+			##if (curr_reln_freq > 0):
+			#if ((reln_type != RELATION_R3) and (TaxaPair_Reln_Dict[l]._GetEdgeWeight(reln_type) >= (0.7 * max_freq))) or \
+				#((reln_type == RELATION_R3) and (TaxaPair_Reln_Dict[l]._CheckTargetRelnConsensus(reln_type))):
+				#TaxaPair_Reln_Dict[l]._AddAllowedReln(reln_type)
+				#Taxa_Info_Dict[l[0]]._AddAllowedReln(reln_type, l[1])
+				#Taxa_Info_Dict[l[1]]._AddAllowedReln(Complementary_Reln(reln_type), l[0])
+					
+		#"""
+		#now we check the size of allowed relation list for this couplet
+		#accordingly, we put the relation and support score information on different support score queues
+		#"""
+		#allowed_reln_list = TaxaPair_Reln_Dict[l]._GetAllowedRelnList()
+		#ntree = TaxaPair_Reln_Dict[l]._GetNoSupportTrees()
+		#if (len(allowed_reln_list) == 1) and (ntree > 1):
+			#"""
+			#here only single relation is supported by at least 2 trees
+			#so we use the queue "Queue_Score_1Reln_2Tree" for storing the couplet relation
+			#"""
+			#reln_type = allowed_reln_list[0]
+			#support_score = TaxaPair_Reln_Dict[l]._GetEdgeCost_ConnReln(reln_type)
+			#sublist = [l[0], l[1], reln_type, support_score]
+			#Queue_Score_1Reln_2Tree.append(sublist)
+		#elif (len(allowed_reln_list) == 2) and (ntree > 1):
+			#"""
+			#here two different relations between this couplet is supported by more than one input tree
+			#"""
+			
+			#"""
+			#case 1 - RELATION_R4 is in allowed relation list
+			#so we use the sum of frequencies of the allowed relations as the support score
+			#and place the R4 relation in "Queue_Score_2Reln_2Tree"
+			#"""
+			#if RELATION_R4 in allowed_reln_list:
+				#freq_sum = 0
+				#for reln_type in allowed_reln_list:
+					#freq_sum = freq_sum + TaxaPair_Reln_Dict[l]._GetEdgeWeight(reln_type)
+				#sublist = [l[0], l[1], RELATION_R4, freq_sum]
+				#Queue_Score_2Reln_2Tree.append(sublist)
+			#elif RELATION_R1 in allowed_reln_list and RELATION_R3 in allowed_reln_list:
+				#freq_sum = TaxaPair_Reln_Dict[l]._GetEdgeWeight(RELATION_R1) + TaxaPair_Reln_Dict[l]._GetEdgeWeight(RELATION_R3)
+				#sublist = [l[0], l[1], RELATION_R1, freq_sum]
+				#Queue_Score_2Reln_2Tree.append(sublist)
+			#elif RELATION_R2 in allowed_reln_list and RELATION_R3 in allowed_reln_list:
+				#freq_sum = TaxaPair_Reln_Dict[l]._GetEdgeWeight(RELATION_R2) + TaxaPair_Reln_Dict[l]._GetEdgeWeight(RELATION_R3)
+				#sublist = [l[0], l[1], RELATION_R2, freq_sum]
+				#Queue_Score_2Reln_2Tree.append(sublist)
+			#else:
+				#"""
+				#allowed relations consist of RELATION_R1 and RELATION_R2
+				#so we insert them in the "Queue_Score_Conflict_Couplet"
+				#"""
+				#for reln_type in allowed_reln_list:
+					#support_score = TaxaPair_Reln_Dict[l]._GetEdgeCost_ConnReln(reln_type)
+					#sublist = [l[0], l[1], reln_type, support_score]
+					#Queue_Score_Conflict_Couplet.append(sublist)
+		#else:
+			#"""
+			#either the couplet is supported by a single input tree
+			#or the couplet supports more than two different relations
+			#so, we place the couplet and corresponding relation, support scores in "Queue_Score_Conflict_Couplet"
+			#"""
+			#for reln_type in allowed_reln_list:
+				#support_score = TaxaPair_Reln_Dict[l]._GetEdgeCost_ConnReln(reln_type)
+				#sublist = [l[0], l[1], reln_type, support_score]
+				#Queue_Score_Conflict_Couplet.append(sublist)
+			
 	#------------------------------------------------------------
 	"""
 	we print the information for individual couplets
 	"""
-	if (DEBUG_LEVEL > 2):
+	if (DEBUG_LEVEL >= 2):
 		for l in TaxaPair_Reln_Dict:
 			#print 'printing info for the TaxaPair_Reln_Dict key: ', l
 			TaxaPair_Reln_Dict[l]._PrintRelnInfo(l, Output_Text_File)
 	
-	##------------------------------------------------------------
-	#"""
-	#this is a loop, in which, every iteration, we find the taxa with minimum indegree within the list of input taxa
-	#"""
-	#Input_Taxa_List = range(len(COMPLETE_INPUT_TAXA_LIST))
-	#while (len(Input_Taxa_List) > 0):
-		#"""
-		#find the min indegree taxa
-		#"""
-		#Min_Indeg_Taxa = Get_Minimum_Indegree_Taxa(Input_Taxa_List)
-		#if (DEBUG_LEVEL >= 2):
-			#fp = open(Output_Text_File, 'a')
-			#fp.write('\n\n Current Min_Indeg_Taxa: ' + str(Min_Indeg_Taxa) + '  Its label: ' + str(COMPLETE_INPUT_TAXA_LIST[Min_Indeg_Taxa]))
-			#fp.close()
-		#"""
-		#We process this taxa, by processing all its allowed R1 to R4 candidates
-		#"""
-		#Reachability_Graph_Mat = Process_Single_Taxa(Min_Indeg_Taxa, Reachability_Graph_Mat, Output_Text_File)
-		
-		#"""
-		#at last, remove the taxa from the Input_Taxa_List
-		#"""
-		#Input_Taxa_List.remove(Min_Indeg_Taxa)
-	##------------------------------------------------------------
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
+	#------------------------------------------------------------
 	""" 
 	sort the priority queues according to the support score value of individual relations
 	4th field of individual sublist denotes the support score
 	we use max priority queue implementation for storing and sorting these queues
 	"""
-	if (len(Cost_List_Taxa_Pair_Single_Reln) > 0):
-		# sorting the non-conflicting queue
-		Sort_Priority_Queue(Cost_List_Taxa_Pair_Single_Reln)
+	# sorting the queue storing a single supported relation for more than one tree
+	if (len(Queue_Score_1Reln_2Tree) > 0):
+		Sort_Priority_Queue(Queue_Score_1Reln_2Tree)
+
+	# sorting the queue storing two different supported relations for more than one tree
+	if (len(Queue_Score_2Reln_2Tree) > 0):
+		Sort_Priority_Queue(Queue_Score_2Reln_2Tree)
 	
-	# sorting the conflicting queue
-	Sort_Priority_Queue(Cost_List_Taxa_Pair_Multi_Reln)
+	# sorting the queue storing all other couplet and their support score information
+	if (len(Queue_Score_Conflict_Couplet) > 0):
+		Sort_Priority_Queue(Queue_Score_Conflict_Couplet)
 
 	data_initialize_timestamp = time.time()	# note the timestamp
-	##------------------------------------------------------------
+	#------------------------------------------------------------
 	#if (DEBUG_LEVEL >= 2):
 		#fp = open(Output_Text_File, 'a')
 		#fp.write('\n\n  Printing contents of Cost_List_Taxa_Pair_Single_Reln  \n\n')
 		#fp.close()
 		#PrintQueueInfo(Cost_List_Taxa_Pair_Single_Reln, Output_Text_File)
+	#------------------------------------------------------------
+	"""
+	first we process the queue containing a single supported relation for more than one input tree
+	"""
+	if (len(Queue_Score_1Reln_2Tree) > 0):
+		Reachability_Graph_Mat = Proc_Queue(Reachability_Graph_Mat, 0, Output_Text_File)
 
-	#------------------------------------------------------------
 	"""
-	first we process the non-conflicting queue, provided we use it
+	then we process the queue containing two different supported relations for more than one input tree
 	"""
-	if (len(Cost_List_Taxa_Pair_Single_Reln) > 0):
+	if (len(Queue_Score_2Reln_2Tree) > 0):
 		Reachability_Graph_Mat = Proc_Queue(Reachability_Graph_Mat, 1, Output_Text_File)
+	
+	"""
+	then we process the conflicting queue
+	"""
+	if (len(Queue_Score_Conflict_Couplet) > 0):
+		Reachability_Graph_Mat = Proc_Queue(Reachability_Graph_Mat, 2, Output_Text_File)
 	#------------------------------------------------------------
-	"""
-	we process the conflicting queue now
-	"""
-	Reachability_Graph_Mat = Proc_Queue(Reachability_Graph_Mat, 0, Output_Text_File)
-	##------------------------------------------------------------
 	## we print the final connection status for all the tree nodes
 	#if (DEBUG_LEVEL > 2):
 		#for l in Taxa_Info_Dict:
@@ -566,7 +534,7 @@ def main():
 		fp.write('\n **** total number of clusters: ' + str(len(CURRENT_CLUST_IDX_LIST)))
 		fp.write('\n CURRENT_CLUST_IDX_LIST contents: ')
 		fp.write(str(CURRENT_CLUST_IDX_LIST))
-		fp.write('\n ========== cluster information after reachability graph generation =============')
+		fp.write('\n\n\n ========== cluster information after reachability graph generation =============\n\n')
 		fp.close()
 		for i in Cluster_Info_Dict:
 			#print 'printing the information for cluster node: ', i
@@ -574,6 +542,96 @@ def main():
 
 	# note the timestamp
 	reachability_graph_form_timestamp = time.time()  
+
+	##------------------------------------------------------------
+	#"""
+	#here we create a matrix containing individual cluster pair's average / max XL information
+	#for each cluster pair (C1, C2), we explore all XL values of the couplets (x,y)
+	#where x in C1, and y in C2
+	#finally, the maximum of XL values are used as the distance matrix entry
+	#"""
+	#Clust_Pair_XL_Mat = numpy.zeros((len(CURRENT_CLUST_IDX_LIST), len(CURRENT_CLUST_IDX_LIST)), dtype=numpy.float)
+	#for i in range(len(CURRENT_CLUST_IDX_LIST) - 1):
+		#clust1_idx = CURRENT_CLUST_IDX_LIST[i]
+		#for j in range(i+1, len(CURRENT_CLUST_IDX_LIST)):
+			#clust2_idx = CURRENT_CLUST_IDX_LIST[j]
+			#Clust_Pair_XL_Mat[i][j] = Clust_Pair_XL_Mat[j][i] = \
+				#FindAvgXL(Cluster_Info_Dict[clust1_idx]._GetSpeciesList(), \
+					#Cluster_Info_Dict[clust2_idx]._GetSpeciesList(), DIST_MAT_TYPE, 2, 1)
+	
+	##------------------------------------------------------------
+	#"""
+	#here we create a matrix containing individual cluster pair's average / max internode count information
+	#for each cluster pair (C1, C2), we explore all internode count values of the couplets (x,y)
+	#where x in C1, and y in C2
+	#finally, the maximum of internode count values are used as the distance matrix entry
+	#"""
+	#Clust_Pair_Branch_Count_Mat = numpy.zeros((len(CURRENT_CLUST_IDX_LIST), len(CURRENT_CLUST_IDX_LIST)), dtype=numpy.float)
+	#for i in range(len(CURRENT_CLUST_IDX_LIST) - 1):
+		#clust1_idx = CURRENT_CLUST_IDX_LIST[i]
+		#for j in range(i+1, len(CURRENT_CLUST_IDX_LIST)):
+			#clust2_idx = CURRENT_CLUST_IDX_LIST[j]
+			#Clust_Pair_Branch_Count_Mat[i][j] = Clust_Pair_Branch_Count_Mat[j][i] = \
+				#FindAvgInternodeCount(Cluster_Info_Dict[clust1_idx]._GetSpeciesList(), \
+					#Cluster_Info_Dict[clust2_idx]._GetSpeciesList(), 2, 1)
+
+	#------------------------------------------------------------
+	"""
+	here check the clusters which do not have any R2 connection or possible R2 connection
+	"""
+	Solve_NPP_NoPossibleR2(Reachability_Graph_Mat, Output_Text_File)
+	
+	# print the cluster information 
+	if (DEBUG_LEVEL > 0):
+		fp = open(Output_Text_File, 'a')
+		fp.write('\n **** total number of clusters: ' + str(len(CURRENT_CLUST_IDX_LIST)))
+		fp.write('\n CURRENT_CLUST_IDX_LIST contents: ')
+		fp.write(str(CURRENT_CLUST_IDX_LIST))    
+		fp.write('\n\n\n ========== cluster information after Solve_NPP_NoPossibleR2 =============\n\n')
+		fp.close()
+		for i in Cluster_Info_Dict:
+			#print 'printing the information for cluster node: ', i
+			Cluster_Info_Dict[i]._PrintClusterInfo(i, Output_Text_File)
+	
+	#------------------------------------------------------------
+	"""
+	first check for individual clusters their possible R1 / R2 lists
+	and remove ambiguous connections
+	"""
+	Solve_MPP_PossibleR1R2(Reachability_Graph_Mat, Output_Text_File)
+	
+	# print the cluster information 
+	if (DEBUG_LEVEL > 0):
+		fp = open(Output_Text_File, 'a')
+		fp.write('\n **** total number of clusters: ' + str(len(CURRENT_CLUST_IDX_LIST)))
+		fp.write('\n CURRENT_CLUST_IDX_LIST contents: ')
+		fp.write(str(CURRENT_CLUST_IDX_LIST))    
+		fp.write('\n\n\n ========== cluster information after Solve_MPP_PossibleR1R2 =============\n\n')
+		fp.close()
+		for i in Cluster_Info_Dict:
+			#print 'printing the information for cluster node: ', i
+			Cluster_Info_Dict[i]._PrintClusterInfo(i, Output_Text_File)
+
+	#------------------------------------------------------------
+	# add - sourya
+	"""
+	here we create another matrix Clust_Possible_R1_Mat of dimension 
+	len(CURRENT_CLUST_IDX_LIST) X len(CURRENT_CLUST_IDX_LIST)
+	
+	this is a numpy 2D array 
+	values Mat[x][y] = 1 means x->y in terms of possible R1 candidate
+	"""
+	Clust_Possible_R1_Mat = numpy.zeros((len(CURRENT_CLUST_IDX_LIST), len(CURRENT_CLUST_IDX_LIST)), dtype=numpy.int)
+	for x in Cluster_Info_Dict:
+		mat_x_idx = CURRENT_CLUST_IDX_LIST.index(x)
+		x_poss_R1_list = Cluster_Info_Dict[x]._GetPossibleR1List()
+		if (len(x_poss_R1_list) > 0):
+			for y in x_poss_R1_list:
+				mat_y_idx = CURRENT_CLUST_IDX_LIST.index(y)
+				Clust_Possible_R1_Mat[mat_x_idx][mat_y_idx] = 1
+				
+	# end add - sourya
+	
 	#------------------------------------------------------------
 	""" 
 	now perform the transitive reduction of the closure formed by 
@@ -583,7 +641,7 @@ def main():
 	then in the final graph, only A->B and B->C information needs to be preserved
 	in order to form the DAG 
 	"""
-	CompressDirectedGraph(Reachability_Graph_Mat)
+	CompressDirectedGraph(Reachability_Graph_Mat, Clust_Possible_R1_Mat, Output_Text_File)
 	
 	# print the cluster information 
 	if (DEBUG_LEVEL > 0):
@@ -591,7 +649,27 @@ def main():
 		fp.write('\n **** total number of clusters: ' + str(len(CURRENT_CLUST_IDX_LIST)))
 		fp.write('\n CURRENT_CLUST_IDX_LIST contents: ')
 		fp.write(str(CURRENT_CLUST_IDX_LIST))    
-		fp.write('\n ========== cluster information after transitive reduction =============')
+		fp.write('\n\n\n ========== cluster information after transitive reduction =============\n\n')
+		fp.close()
+		for i in Cluster_Info_Dict:
+			#print 'printing the information for cluster node: ', i
+			Cluster_Info_Dict[i]._PrintClusterInfo(i, Output_Text_File)
+	
+	#------------------------------------------------------------
+	# add - sourya
+	"""
+	This is additional compression of the DAG
+	"""
+	CompressDAG_Dashed(Reachability_Graph_Mat, Clust_Possible_R1_Mat, Output_Text_File)
+	# end add - sourya
+
+	# print the cluster information 
+	if (DEBUG_LEVEL > 0):
+		fp = open(Output_Text_File, 'a')
+		fp.write('\n **** total number of clusters: ' + str(len(CURRENT_CLUST_IDX_LIST)))
+		fp.write('\n CURRENT_CLUST_IDX_LIST contents: ')
+		fp.write(str(CURRENT_CLUST_IDX_LIST))    
+		fp.write('\n\n\n ========== cluster information after CompressDAG_Dashed =============\n\n')
 		fp.close()
 		for i in Cluster_Info_Dict:
 			#print 'printing the information for cluster node: ', i
@@ -604,7 +682,29 @@ def main():
 	this will solve the multiple parent problem C2 as discussed in the manuscript 
 	this is a new addition and marked under the DFS based parent refinement option 
 	"""
-	SolveMultipleParentC2Problem(Output_Text_File, MPP_SOLVE_METRIC, DIST_MAT_TYPE)
+	SelectUniqueParent_Directed(Output_Text_File)
+		
+	# print the cluster information 
+	if (DEBUG_LEVEL > 0):
+		fp = open(Output_Text_File, 'a')
+		fp.write('\n **** total number of clusters: ' + str(len(CURRENT_CLUST_IDX_LIST)))
+		fp.write('\n CURRENT_CLUST_IDX_LIST contents: ')
+		fp.write(str(CURRENT_CLUST_IDX_LIST))    
+		fp.write('\n\n\n ========== cluster information after solving MPP (directed edge) =============\n\n')
+		fp.close()
+		for i in Cluster_Info_Dict:
+			#print 'printing the information for cluster node: ', i
+			Cluster_Info_Dict[i]._PrintClusterInfo(i, Output_Text_File)
+
+	#----------------------------------------------
+	# add - sourya
+	"""
+	now compute the set of distinct possible R2 clusters for each of the clusters
+	"""
+	for i in Cluster_Info_Dict:
+		Cluster_Info_Dict[i]._ComputeDistinctPossibleR2List()
+	# end add - sourya
+	#----------------------------------------------
 	
 	# print the cluster information 
 	if (DEBUG_LEVEL > 0):
@@ -612,16 +712,15 @@ def main():
 		fp.write('\n **** total number of clusters: ' + str(len(CURRENT_CLUST_IDX_LIST)))
 		fp.write('\n CURRENT_CLUST_IDX_LIST contents: ')
 		fp.write(str(CURRENT_CLUST_IDX_LIST))    
-		fp.write('\n ========== cluster information after solving multiple parent problem =============')
+		fp.write('\n\n\n ========== cluster information after Transitive reduction (Dashed edge) =============\n\n')
 		fp.close()
 		for i in Cluster_Info_Dict:
 			#print 'printing the information for cluster node: ', i
 			Cluster_Info_Dict[i]._PrintClusterInfo(i, Output_Text_File)
-			
+	
 	# note the timestamp
 	cluster_of_node_refine_species_timestamp1 = time.time()  
 
-	#----------------------------------------------
 	""" 
 	construct supertree from the generated DAG 
 	scheme: repeatedly extract the nodes (taxa clusters) with minimum indegree
@@ -635,7 +734,7 @@ def main():
 	"""
 	no_of_components = 0	# for forest
 	while (1):
-		root_clust_node_idx = Extract_Node_Min_Indeg(len(CURRENT_CLUST_IDX_LIST))
+		root_clust_node_idx = Extract_Node_Min_Indeg(Output_Text_File)
 		if (root_clust_node_idx == -1):
 			break
 		Tree_Str = PrintNewick(root_clust_node_idx)	#, Reachability_Graph_Mat, len(CURRENT_CLUST_IDX_LIST))
@@ -656,13 +755,11 @@ def main():
 	fp = open(Output_Text_File, 'a')
 	fp.write('\n\n\n\n **** original supertree as newick string --- ' + Final_Supertree_Str) 
 
-	## comment - sourya
-	#Final_Supertree_Str = Remove_Extra_Paranthesis(Final_Supertree_Str)  
-	#fp.write('\n --- after removing extra paranthesis -- supertree as newick string --- ' + Final_Supertree_Str) 
-	#fp.close()
-	## end comment - sourya
-
-	# now read this super string in a supertree containing all the input taxa
+	"""
+	now read this super string in a supertree containing all the input taxa
+	Note: This is an important step, since the parsed tree from the string has the correct 
+	tree structure, with respect to dendropy format
+	"""
 	Supertree_Final = dendropy.Tree.get_from_string(Final_Supertree_Str, schema="newick")	#preserve_underscores=PRESERVE_UNDERSCORE, default_as_rooted=ROOTED_TREE)
 	if 0:
 		Supertree_Final.print_plot()  
@@ -676,7 +773,6 @@ def main():
 	fp.write('\n\n\n ***** after update splits: supertree: ' + Supertree_Final.as_newick_string())    
 	fp.close()
 
-	# add - sourya  
 	if (BINARY_SUPERTREE_OPTION == True):    
 		""" 
 		this function removes all multifurcating clusters and produces binary tree 
@@ -692,7 +788,9 @@ def main():
 		fp.write('\n --- user did not provide option for producing strict binary supertree - so output tree can be non-binary')
 		fp.close()
 		
-	# write this tree on a separate text file
+	"""
+	write this tree on a separate text file
+	"""
 	if (OUTPUT_FILENAME == ""):
 		out_treefilename = dir_of_curr_exec + '/' + 'cospedbtree_newick.tre'
 	else:
@@ -741,26 +839,31 @@ def main():
 	sum_symmetric_diff = 0
 	fp.write('\n \n\n total edges of supertree: ' + str(len(Supertree_Final.get_edge_set())))  
 
-	#print 'taxon set of supertree: ', Supertree_Final.infer_taxa()
 	for inp_tree_idx in range(len(Input_Treelist)):
 		Curr_src_tree = Input_Treelist[inp_tree_idx]
 		curr_src_tree_taxa = Curr_src_tree.infer_taxa().labels()
 		curr_src_tree_no_of_taxa = len(curr_src_tree_taxa)
 		
-		# according to the taxa set of the current source tree, 
-		# prune the supertree to get the tree portion containing only this taxa set
+		"""
+		according to the taxa set of the current source tree, 
+		prune the supertree to get the tree portion containing only this taxa set
+		"""
 		pruned_tree = dendropy.Tree(Supertree_Final)
 		pruned_tree.retain_taxa_with_labels(curr_src_tree_taxa)
 		
-		# source tree number of edges calculation
-		# it is used to compute normalized RF metric values
+		"""
+		source tree number of edges calculation
+		it is used to compute normalized RF metric values
+		"""
 		lenSrcTree = len(Curr_src_tree.get_edge_set())
 		sumLenSrcTree = sumLenSrcTree + lenSrcTree
 		fp.write('\n src tree : ' + str(Curr_src_tree))
 		fp.write('\n pruned supertree: ' + str(pruned_tree))
 		fp.write('\n src tree len: ' + str(lenSrcTree) + ' pruned supertree len: ' + str(len(pruned_tree.get_edge_set())))
 		
-		# determine the false positives and the false negatives 
+		"""
+		determine the false positives and the false negatives 
+		"""
 		tup = Curr_src_tree.false_positives_and_negatives(pruned_tree)
 		fp.write('   FP_int: ' + str(tup[0]) + '  FN_int:  ' + str(tup[1]))
 		sumFP = sumFP + tup[0]
@@ -771,13 +874,17 @@ def main():
 		fp.write('   Symmetric difference: ' + str(symm_diff))
 		sum_symmetric_diff = sum_symmetric_diff + symm_diff
 
-	# final normalized sumFP's are computed by dividing with the number of trees
+	"""
+	final normalized sumFP's are computed by dividing with the number of trees
+	"""
 	normsumFP = (sumFP * 1.0) / sumLenSrcTree
 	normsumFN = (sumFN * 1.0) / sumLenSrcTree
 	normsumRF = (sumRF * 1.0) / sumLenSrcTree
 	norm_symm_diff = sum_symmetric_diff / (2.0 * sumLenSrcTree)
-		
-	# print the final result
+	
+	"""
+	print the final result
+	"""
 	fp.write('\n\n\n ===============>>>>>>>>>>>>>>> FINAL RESULTS \n \n')
 	fp.write('\n ******* absolute sumFP: ' + str(sumFP) + \
 		'\n ******* absolute sumFN: ' + str(sumFN) + \
@@ -801,11 +908,13 @@ def main():
 	Taxa_Info_Dict.clear()
 	TaxaPair_Reln_Dict.clear()
 
-	## clear the lists associated
-	if (len(Cost_List_Taxa_Pair_Multi_Reln) > 0):
-		Cost_List_Taxa_Pair_Multi_Reln[:] = []
-	if (len(Cost_List_Taxa_Pair_Single_Reln) > 0):
-		Cost_List_Taxa_Pair_Single_Reln[:] = []
+	# clear the lists associated
+	if (len(Queue_Score_Conflict_Couplet) > 0):
+		Queue_Score_Conflict_Couplet[:] = []
+	if (len(Queue_Score_1Reln_2Tree) > 0):
+		Queue_Score_1Reln_2Tree[:] = []
+	if (len(Queue_Score_2Reln_2Tree) > 0):
+		Queue_Score_2Reln_2Tree[:] = []
 	if (len(COMPLETE_INPUT_TAXA_LIST) > 0):
 		COMPLETE_INPUT_TAXA_LIST[:] = []
 	if (len(CURRENT_CLUST_IDX_LIST) > 0):
@@ -813,6 +922,7 @@ def main():
 
 	# free the reachability graph (numpy array)
 	del Reachability_Graph_Mat
+	del Clust_Possible_R1_Mat
   
 #-----------------------------------------------------
 if __name__ == "__main__":

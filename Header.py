@@ -38,17 +38,24 @@ each entry of this dictionary is indexed by a pair of taxon labels
 """
 TaxaPair_Reln_Dict = dict()
 
+#--------------------------------------------------
 """
 queue storing relations of conflicting couplets (supporting more than one type of relation 
 in the input trees)
 """
-Cost_List_Taxa_Pair_Multi_Reln = []
+Queue_Score_Conflict_Couplet = []
 
 """
 queue storing relations of non-conflicting couplets (supporting only one type of relation 
-in the input trees)
+in the input trees) which are supported by more than one gene trees
 """
-Cost_List_Taxa_Pair_Single_Reln = [] 
+Queue_Score_1Reln_2Tree = []
+
+"""
+queue containing relations of couplets supported by > 1 tree, and having 2 different relations
+"""
+Queue_Score_2Reln_2Tree = []
+#--------------------------------------------------
 
 """ 
 this list contains the complete set of taxa present in the input trees 
@@ -70,7 +77,7 @@ DEBUG_LEVEL = 2
 MODE_PERCENT = 0.25	#0.4 #0.35	#0.5 
 MODE_BIN_COUNT = 40
 
-##-----------------------------------------------------
+#-----------------------------------------------------
 """
 this class defines a leaf node of input candidate source trees
 that is, it corresponds to one taxa 
@@ -201,6 +208,21 @@ class Reln_TaxaPair(object):
 		allowed relation list which are included in the support score queue
 		"""
 		self.Allowed_Reln_List = []
+		"""
+		this is a list containing the number of instances
+		when R4 relation is actually a pseudo R1 relation
+		idx 0: when level difference of LCA node - key[0] = 2, LCA node - key[1] > 2
+		idx 1: when level difference of LCA node - key[0] > 2, LCA node - key[1] = 2
+		idx 2: when level difference of LCA node - key[0] = 2, LCA node - key[1] = 2
+		"""
+		self.freq_R4_pseudo_R1R2 = [0] * 3
+	
+	#----------------------------------
+	def _AddFreqPseudoR1(self, idx, r=1):
+		self.freq_R4_pseudo_R1R2[idx] = self.freq_R4_pseudo_R1R2[idx] + r
+		
+	def _GetFreqPseudoR1(self, idx):
+		return self.freq_R4_pseudo_R1R2[idx]
 	
 	#----------------------------------
 	def _AddAllowedReln(self, inp_reln):
@@ -456,7 +478,7 @@ class Reln_TaxaPair(object):
 	def _PrintRelnInfo(self, key, Output_Text_File):
 		fp = open(Output_Text_File, 'a')    
 		fp.write('\n\n\n taxa pair key: ' + str(key) + ' couplet:  ' + str(COMPLETE_INPUT_TAXA_LIST[key[0]]) \
-			+ '  and ' + str(COMPLETE_INPUT_TAXA_LIST[key[1]]))
+			+ ', ' + str(COMPLETE_INPUT_TAXA_LIST[key[1]]))
 		fp.write('\n relations [type/count/priority_reln/score]: ')
 		for i in range(4):
 			fp.write('\n [' + str(i) + '/' + str(self.freq_count[i]) + '/' + str(self.priority_reln[i]) \
@@ -464,6 +486,7 @@ class Reln_TaxaPair(object):
 		fp.write('\n AVERAGE Sum of excess gene **** : ' + str(self._GetAvgXLGeneTrees()))
 		fp.write('\n No of supporting trees : ' + str(self.supporting_trees))
 		fp.write('\n Average sum of internode count : ' + str(self._GetAvgSumLevel()))    
+		fp.write('\n R4 relation pseudo (R1/R2/R3) count: ' + str(self.freq_R4_pseudo_R1R2))
 		fp.close()
 	
 #-----------------------------------------------------
@@ -487,6 +510,21 @@ class Cluster_node(object):
 		curr_clust->cy /  cy->curr_clust / R3 (cy, curr_clust) / R4 (cy, curr_clust) are present
 		"""
 		self.Reln_List = [[] for i in range(4)]
+		"""
+		stores the indices of clusters cy such that curr_clust->cy connection 
+		needs to be checked
+		"""
+		self.possible_R1_list = []
+		"""
+		stores the indices of clusters cy such that curr_clust<-cy connection 
+		needs to be checked
+		"""
+		self.possible_R2_list = []
+		"""
+		stores the indices of clusters cy such that curr_clust<----cy holds
+		but curr_clust---->cy does not hold
+		"""
+		self.Distinct_possible_R2_list = []
 		"""
 		during initialization, append one tuple to this cluster
 		"""
@@ -566,12 +604,46 @@ class Cluster_node(object):
 			self.Reln_List[reln_type].remove(dest_clust_idx)    
 
 	#--------------------------------------------------------
+	# add - sourya
+	def _AddPossibleR1(self, dest_clust_idx):
+		if dest_clust_idx not in self.possible_R1_list:
+			self.possible_R1_list.append(dest_clust_idx)
+	
+	def _RemovePossibleR1(self, dest_clust_idx):
+		if dest_clust_idx in self.possible_R1_list:
+			self.possible_R1_list.remove(dest_clust_idx)
+			
+	def _GetPossibleR1List(self):
+		return self.possible_R1_list
+
+	def _AddPossibleR2(self, dest_clust_idx):
+		if dest_clust_idx not in self.possible_R2_list:
+			self.possible_R2_list.append(dest_clust_idx)
+	
+	def _RemovePossibleR2(self, dest_clust_idx):
+		if dest_clust_idx in self.possible_R2_list:
+			self.possible_R2_list.remove(dest_clust_idx)
+			
+	def _GetPossibleR2List(self):
+		return self.possible_R2_list
+	
+	def _ComputeDistinctPossibleR2List(self):
+		for x in self.possible_R2_list:
+			if x not in self.possible_R1_list:
+				self.Distinct_possible_R2_list.append(x)
+	
+	def _GetDistinctPossibleR2List(self):
+		return self.Distinct_possible_R2_list
+	#--------------------------------------------------------
 	def _PrintClusterInfo(self, key, Output_Text_File):
 		fp = open(Output_Text_File, 'a')    
 		fp.write('\n cluster key: ' + str(key))
 		fp.write('\n species list: ' + str(self.Species_List))
 		fp.write('\n out edge list (R1): ' + str(self.Reln_List[RELATION_R1]))
 		fp.write('\n in edge list (R2): ' + str(self.Reln_List[RELATION_R2]))
-		fp.write('\n No edge list (R4): ' + str(self.Reln_List[RELATION_R4]))
-		fp.write('\n Eq edge list (R3): ' + str(self.Reln_List[RELATION_R3]))
+		#fp.write('\n No edge list (R4): ' + str(self.Reln_List[RELATION_R4]))
+		#fp.write('\n Eq edge list (R3): ' + str(self.Reln_List[RELATION_R3]))
+		fp.write('\n Possible R1 list: ' + str(self.possible_R1_list))
+		fp.write('\n Possible R2 list: ' + str(self.possible_R2_list))
+		fp.write('\n (Distinct) Possible R2 list: ' + str(self.Distinct_possible_R2_list))
 		fp.close()
