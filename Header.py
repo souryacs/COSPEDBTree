@@ -7,6 +7,7 @@ import time
 import os
 from cStringIO import StringIO
 from optparse import OptionParser
+import copy
 
 # we define custom edge types
 RELATION_R3 = 0	# equality relationship
@@ -27,6 +28,11 @@ each cluster is basically a collection of taxa related via relation r3
 """
 Cluster_Info_Dict = dict()
 
+#"""
+#this is a dictionary containing information of a pair of taxa clusters
+#"""
+#Cluster_Pair_Info_Dict = dict()
+
 """ 
 the dictionary defines one particular taxa and its associated information
 """
@@ -40,23 +46,23 @@ TaxaPair_Reln_Dict = dict()
 
 #--------------------------------------------------
 """
-queue storing relations of conflicting couplets (supporting more than one type of relation 
-in the input trees)
+queue storing R3 relations of couplets
+provided that the couplet is non conflicting (only R3 relation is present)
 """
-Queue_Score_Conflict_Couplet = []
+Queue_Score_R3_SingleReln = []
 
 """
-queue storing relations of non-conflicting couplets (supporting only one type of relation 
-in the input trees) which are supported by more than one gene trees
+queue storing R3 relations of couplets
+provided that the couplet is conflicting but the R3 relation is majority consensus
 """
-Queue_Score_1Reln_2Tree = []
+Queue_Score_R3_MajCons = []
 
 """
-queue containing relations of couplets supported by > 1 tree, and having 2 different relations
+queue storing relations of individual cluster pairs
 """
-Queue_Score_2Reln_2Tree = []
+Queue_Score_Cluster_Pair = []
+
 #--------------------------------------------------
-
 """ 
 this list contains the complete set of taxa present in the input trees 
 """
@@ -90,62 +96,12 @@ class Single_Taxa(object):
 		otherwise it is part of a valid cluster 
 		"""
 		self.clust_idx_part = -1
-		"""
-		these lists are constructed using the original allowed relations between individual couplets
-		when individual gene trees are analyzed
-		"""
-		self.Allowed_Reln_List = [[] for i in range(4)]
 
 	def _Get_Taxa_Part_Clust_Idx(self):
 		return self.clust_idx_part
 		
 	def _Set_Clust_Idx_taxa_Part(self, inp_clust_idx):
 		self.clust_idx_part = inp_clust_idx
-	
-	"""
-	appends one taxa for one target relation (which is allowed)
-	"""
-	def _AddAllowedReln(self, reln_type, inp_taxa):
-		self.Allowed_Reln_List[reln_type].append(inp_taxa)
-		
-	def _GetAllowedRelnSet(self, reln_type):
-		return self.Allowed_Reln_List[reln_type]
-
-	"""
-	this function checks whether the "inp_taxa_idx" is connected to this taxa 
-	via "inp_reln" only, and no other relation
-	"""
-	def _CheckSingleAllowedReln(self, inp_taxa_idx, inp_reln):
-		if inp_taxa_idx not in self.Allowed_Reln_List[inp_reln]:
-			return False
-		for reln_type in range(4):
-			if (reln_type == inp_reln):
-				continue
-			if inp_taxa_idx in self.Allowed_Reln_List[reln_type]:
-				return False
-		return True
-	
-	"""
-	returns the allowed_in_degree - no of taxa allowed for R2 and R3 relations
-	"""
-	def _GetAllowedInDegree(self):
-		r2_count = len(self.Allowed_Reln_List[RELATION_R2]) + len(self.Allowed_Reln_List[RELATION_R3])
-		r1_count = len(self.Allowed_Reln_List[RELATION_R1]) + len(self.Allowed_Reln_List[RELATION_R3]) + len(self.Allowed_Reln_List[RELATION_R4])
-		if (r1_count > 0):
-			return (r2_count * 1.0) / r1_count
-		else:
-			return 0
-
-	"""
-	returns the allowed_out_degree - no of taxa allowed for R2 and R3 relations
-	"""
-	def _GetAllowedOutDegree(self):
-		r2_count = len(self.Allowed_Reln_List[RELATION_R2]) + len(self.Allowed_Reln_List[RELATION_R3])
-		r1_count = len(self.Allowed_Reln_List[RELATION_R1]) + len(self.Allowed_Reln_List[RELATION_R3]) + len(self.Allowed_Reln_List[RELATION_R4])
-		if (r2_count > 0):
-			return (r1_count * 1.0) / r2_count
-		else:
-			return 0
 	
 	# this function is called after formation of consensus tree
 	def _PrintFinalTaxaInfo(self, key, Output_Text_File):
@@ -155,7 +111,7 @@ class Single_Taxa(object):
 		fp.write('\n taxa is part of the cluster ID: ' + str(self.clust_idx_part))
 		fp.close()
 
-##-----------------------------------------------------
+#-----------------------------------------------------
 """ 
 this class defines a couplet, according to the information obtained from input trees
 key of this class --- taxa1, taxa2  
@@ -226,7 +182,8 @@ class Reln_TaxaPair(object):
 	
 	#----------------------------------
 	def _AddAllowedReln(self, inp_reln):
-		self.Allowed_Reln_List.append(inp_reln)
+		if inp_reln not in self.Allowed_Reln_List:
+			self.Allowed_Reln_List.append(inp_reln)
 	
 	def _Check_Single_Reln_OnlyAllowed(self, inp_reln):
 		if (len(self.Allowed_Reln_List) == 1) and (inp_reln in self.Allowed_Reln_List):
@@ -487,6 +444,7 @@ class Reln_TaxaPair(object):
 		fp.write('\n No of supporting trees : ' + str(self.supporting_trees))
 		fp.write('\n Average sum of internode count : ' + str(self._GetAvgSumLevel()))    
 		fp.write('\n R4 relation pseudo (R1/R2/R3) count: ' + str(self.freq_R4_pseudo_R1R2))
+		fp.write('\n Allowed reln list: ' + str(self.Allowed_Reln_List))
 		fp.close()
 	
 #-----------------------------------------------------
@@ -634,16 +592,90 @@ class Cluster_node(object):
 	
 	def _GetDistinctPossibleR2List(self):
 		return self.Distinct_possible_R2_list
+	
 	#--------------------------------------------------------
-	def _PrintClusterInfo(self, key, Output_Text_File):
+	def _PrintClusterInfo(self, key, Output_Text_File, suppress=False):
 		fp = open(Output_Text_File, 'a')    
-		fp.write('\n cluster key: ' + str(key))
+		fp.write('\n\n cluster key: ' + str(key))
 		fp.write('\n species list: ' + str(self.Species_List))
-		fp.write('\n out edge list (R1): ' + str(self.Reln_List[RELATION_R1]))
-		fp.write('\n in edge list (R2): ' + str(self.Reln_List[RELATION_R2]))
-		#fp.write('\n No edge list (R4): ' + str(self.Reln_List[RELATION_R4]))
-		#fp.write('\n Eq edge list (R3): ' + str(self.Reln_List[RELATION_R3]))
-		fp.write('\n Possible R1 list: ' + str(self.possible_R1_list))
-		fp.write('\n Possible R2 list: ' + str(self.possible_R2_list))
-		fp.write('\n (Distinct) Possible R2 list: ' + str(self.Distinct_possible_R2_list))
+		if (suppress == False):
+			fp.write('\n out edge list (R1): ' + str(self.Reln_List[RELATION_R1]))
+			fp.write('\n in edge list (R2): ' + str(self.Reln_List[RELATION_R2]))
+			#fp.write('\n No edge list (R4): ' + str(self.Reln_List[RELATION_R4]))
+			#fp.write('\n Eq edge list (R3): ' + str(self.Reln_List[RELATION_R3]))
+			fp.write('\n Possible R1 list: ' + str(self.possible_R1_list))
+			fp.write('\n Possible R2 list: ' + str(self.possible_R2_list))
+			fp.write('\n (Distinct) Possible R2 list: ' + str(self.Distinct_possible_R2_list))
 		fp.close()
+
+
+##-----------------------------------------------------
+#""" 
+#this class is representative of a pair of taxa clusters
+#"""
+#class Cluster_Pair(object):
+	#def __init__(self):
+		#""" 
+		#frequencies of individual relations : idx = 0 - R1, 1 - R2, 2 - R4
+		#"""
+		#self.freq_count = [0] * 3
+		#"""
+		#pseudo R1 / R2 freq count between these cluster pairs
+		#idx -- 0 = pseudo R1 + pseudo R3
+		#idx -- 1 = pseudo R2 + pseudo R3
+		#"""
+		#self.pseudo_R4_freq_count = [0] * 2
+		#"""
+		#boolean variables depicting whether the relation (directed / dashed edges) will be used
+		#fields: 
+		#idx = 0 --    -> edge
+		#idx = 1 --    <- edge
+		#idx = 2 --    ---> edge
+		#idx = 3 --    <--- edge
+		#"""
+		#self.bool_reln_status = [0] * 4
+	
+	#def _IncrFreq(self, reln_type, val):
+		#if (reln_type == RELATION_R1):
+			#self.freq_count[0] = self.freq_count[0] + val
+		#elif (reln_type == RELATION_R2):
+			#self.freq_count[1] = self.freq_count[1] + val
+		#else:	#if (reln_type == RELATION_R4):
+			#self.freq_count[2] = self.freq_count[2] + val
+		
+	#def _GetFreq(self, reln_type):
+		#if (reln_type == RELATION_R1):
+			#return self.freq_count[0]
+		#elif (reln_type == RELATION_R2):
+			#return self.freq_count[1]
+		#else:
+			#return self.freq_count[2]
+
+	#def _IncrPseudoR4Freq(self, idx, val):
+		#self.pseudo_R4_freq_count[idx] = self.pseudo_R4_freq_count[idx] + val
+		
+	#def _GetPseudoR4Freq(self, idx):
+		#return self.pseudo_R4_freq_count[idx]
+
+	#def _SetBoolStatus(self, idx):
+		#self.bool_reln_status[idx] = 1
+
+	#def _ReSetBoolStatus(self, idx):
+		#self.bool_reln_status[idx] = 0
+
+	#def _GetBoolStatus(self, idx):
+		#return self.bool_reln_status[idx]
+
+	#def _PrintClusterPairInfo(self, key, Output_Text_File):
+		#fp = open(Output_Text_File, 'a')    
+		#fp.write('\n cluster pair key: ' + str(key[0]) + ',' + str(key[1]))
+		#fp.write('\n relations [freq]: ')
+		#fp.write('\n [' + ' R1 ' + '/' + str(self.freq_count[0]) + ' R2 ' + '/' + str(self.freq_count[1]) + ' R4 ' + '/' + str(self.freq_count[2]) + ']')
+		#fp.write('\n pseudo R4 relations [freq]: ')
+		#fp.write('\n [' + ' R1 ' + '/' + str(self.pseudo_R4_freq_count[0]) + ' R2 ' + '/' + str(self.pseudo_R4_freq_count[1]) + ']')
+		#fp.write('\n Bool status relations: ')
+		#fp.write('\n [' + ' -> ' + '/' + str(self.bool_reln_status[0]) + ' <- ' + '/' + str(self.bool_reln_status[1]) \
+			#+ ' ---> ' + '/' + str(self.bool_reln_status[2]) + ' <--- ' + '/' + str(self.bool_reln_status[3]) + ']')
+		#fp.close()
+		
+	

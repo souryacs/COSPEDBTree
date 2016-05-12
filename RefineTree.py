@@ -42,13 +42,14 @@ def Fill_DistMat_AvgEntry(DistMat, no_of_clust, clust_species_list, DIST_MAT_TYP
 	"""
 	for i in range(no_of_clust - 1):
 		for j in range(i+1, no_of_clust):
-			# here both clust_species_list[i] and clust_species_list[j]
-			# are one element lists (according to their construction)
-			# we have extracted the corresponding element by using [0] operator (extracting first element)
+			"""
+			clust_species_list[i] and clust_species_list[j]
+			contain two taxa list of one or more elements
+			"""
 			if (DIST_MAT_TYPE == 1) or (DIST_MAT_TYPE == 2):
 				entry = FindAvgXL(clust_species_list[i], clust_species_list[j], DIST_MAT_TYPE, 2)
 			else:
-				entry = FindAvgInternodeCount(clust_species_list[i], clust_species_list[j], 2)
+				entry = FindAvgInternodeCount(clust_species_list[i], clust_species_list[j], 2, 2)
 			DistMat[j][i] = DistMat[i][j] = entry
 	
 	return
@@ -57,7 +58,7 @@ def Fill_DistMat_AvgEntry(DistMat, no_of_clust, clust_species_list, DIST_MAT_TYP
 """
 this function finds a single minimum from the input matrix
 """
-def Find_Unique_Min(Norm_DistMat, no_of_clust, clust_species_list):
+def Find_Unique_Min(DistMat, Norm_DistMat, no_of_clust, clust_species_list):
 	# initialize
 	min_val = Norm_DistMat[0][1]
 	min_idx_i = 0
@@ -67,21 +68,16 @@ def Find_Unique_Min(Norm_DistMat, no_of_clust, clust_species_list):
 		for j in range(i+1, no_of_clust):
 			if (i == j):
 				continue
-			
 			if (Norm_DistMat[i][j] < min_val):
-				if 1:	#(CheckMergeImproperLeaves(clust_species_list, i, j) == False):
-					min_val = Norm_DistMat[i][j]
+				min_val = Norm_DistMat[i][j]
+				min_idx_i = i
+				min_idx_j = j
+			elif (Norm_DistMat[i][j] == min_val):
+				if (DistMat[i][j] < DistMat[min_idx_i][min_idx_j]):
 					min_idx_i = i
 					min_idx_j = j
-			#elif (Norm_DistMat[i][j] == min_val):
-				#if (CheckMergeImproperLeaves(clust_species_list, i, j) == False):
-					#if (GetR3RelnLevelConsVal(clust_species_list[i][0], clust_species_list[j][0]) > \
-						#GetR3RelnLevelConsVal(clust_species_list[min_idx_i][0], clust_species_list[min_idx_j][0])):
-						#min_idx_i = i
-						#min_idx_j = j
 	
 	return min_idx_i, min_idx_j
-
 
 #--------------------------------------------------------
 # this function is a shortcut to obtain the normalized expression 
@@ -95,7 +91,7 @@ def ObtainNormalizedVal(num, denom1, denom2):
   else:
     return 0
 
-##---------------------------------------------
+#---------------------------------------------
 """ 
 function to print the matrix content
 N is the matrix dimension
@@ -108,7 +104,6 @@ def PrintMatrixContent(N, TaxaList, inp_data, inp_str, textfile):
     for j in range(i+1):
       fp.write(' ' + str(inp_data[i][j]))
   fp.close()
-
 
 #-------------------------------------------
 """
@@ -161,7 +156,7 @@ def Get_NJ_Based_Min_Pair_Idx(DistMat, Norm_DistMat, no_of_clust, clust_species_
 
 	# now we have to find the minimum among these elements 
 	# present in the matrix Norm_DistMat
-	min_idx_i, min_idx_j = Find_Unique_Min(Norm_DistMat, no_of_clust, clust_species_list)
+	min_idx_i, min_idx_j = Find_Unique_Min(DistMat, Norm_DistMat, no_of_clust, clust_species_list)
 
 	return min_idx_i, min_idx_j
 
@@ -252,7 +247,7 @@ def Merge_Cluster_Pair(Curr_tree, clust_species_list, min_idx_i, min_idx_j, taxa
 this function processes one internal node (basically the children list)
 to resolve multifurcation
 """
-def ResolveMultifurcation(Curr_tree, clust_species_list, no_of_input_clusters, Output_Text_File, NJ_RULE_USED, DIST_MAT_TYPE, NJ_MERGE_CLUST):
+def ResolveMultifurcation(Curr_tree, clust_species_list, no_of_input_clusters, Output_Text_File, NJ_RULE_USED, DIST_MAT_TYPE):
 	# total number of clusters
 	no_of_clust = no_of_input_clusters
 
@@ -368,7 +363,7 @@ this function refines input supertree such that the supertree becomes binary
 this is required for proper benchmarking with existing binary tree construction methods on 
 ILS sorting
 """
-def Refine_Supertree_Binary_Form(Curr_tree, Output_Text_File, NJ_RULE_USED, DIST_MAT_TYPE, NJ_MERGE_CLUST):
+def Refine_Supertree_Binary_Form(Curr_tree, Output_Text_File, NJ_RULE_USED, DIST_MAT_TYPE):
 	"""
 	we traverse input tree internal nodes in postorder fashion
 	and list the child nodes of it
@@ -390,8 +385,7 @@ def Refine_Supertree_Binary_Form(Curr_tree, Output_Text_File, NJ_RULE_USED, DIST
 				clust_species_list.append(subl)
 			
 			# call the resolving routine
-			ResolveMultifurcation(Curr_tree, clust_species_list, len(curr_node_children), Output_Text_File, \
-				NJ_RULE_USED, DIST_MAT_TYPE, NJ_MERGE_CLUST)
+			ResolveMultifurcation(Curr_tree, clust_species_list, len(curr_node_children), Output_Text_File, NJ_RULE_USED, DIST_MAT_TYPE)
 
 	return
 
