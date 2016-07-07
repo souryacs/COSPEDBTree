@@ -19,6 +19,7 @@ V1.4 - 17.06.2015 - binary refinement and github release
 V1.5 - 30.09.2015 - weighted taxa cluster and frequency count 
 V1.6 - 06.04.2016 - MPP module update
 V1.7 - 09.04.2016 - Graph based cluster connectivity model incorporated
+V1.8 - 05.06.2016 - Improved graph based cluster connectivity model with simplified code
 """
 
 # Copyright 2013, 2014, 2015, 2016 
@@ -73,14 +74,6 @@ def parse_options():
 				help="1 - input file format is NEWICK (default) \
 				2 - input file format is NEXUS")
 
-	#parser.add_option("-q", "--queues", \
-				#type="int", \
-				#action="store", \
-				#dest="no_of_queues", \
-				#default=1, \
-				#help="1 - only a single max priority queue is used for storing the score metrics \
-				#2 - two separate queues are used to store the conflicting and non conflicting taxa pairs and corresponding score metrics (default)")
-
 	parser.add_option("-b", "--binary", \
 				action="store_true", \
 				dest="binary_suptr", \
@@ -115,15 +108,6 @@ def parse_options():
 				if TRUE, then this option weighs couplet statistics according \
 				to the size of taxa subset underlying MRCA of that couplet")  
 
-	#parser.add_option("-x", "--mppsolvemetric", \
-				#type="int", \
-				#action="store", \
-				#dest="MPP_solve_metric", \
-				#default=2, \
-				#help="1 - Use priority measure based selection (higher value)\
-				#2 - Use XL based selection (lower value) \
-				#3 - Use Internode count based selection (lower value)")     
-
 	parser.add_option("-d", "--distmat", \
 				type="int", \
 				action="store", \
@@ -131,7 +115,9 @@ def parse_options():
 				default=1, \
 				help="1 - Mean of XL \
 				2 - Mean(Average, Mode based Avg) of XL \
-				3 - Mean of internode count")     
+				3 - Mean of internode count \
+				4 - Coalescence Rank \
+				5 - Pseudo R1 frequency")     
 
 	opts, args = parser.parse_args()
 	return opts, args
@@ -151,11 +137,9 @@ def main():
 		INPUT_FILE_FORMAT = 'nexus'
 	INPUT_FILENAME = opts.INP_FILENAME
 	OUTPUT_FILENAME = opts.OUT_FILENAME
-	NO_OF_QUEUES = 1	#opts.no_of_queues
 	BINARY_SUPERTREE_OPTION = opts.binary_suptr
 	NJ_RULE_USED = opts.NJ_type 
 	WEIGHT_TAXA_SUBSET = opts.weight_taxa_subset
-	#MPP_SOLVE_METRIC = opts.MPP_solve_metric
 	DIST_MAT_TYPE = opts.dist_mat_type
 
 	if (INPUT_FILENAME == ""):
@@ -183,12 +167,11 @@ def main():
 		first create the output directory containing the results
 		the directory name should also reflect the settings of input parameters
 		"""
-		dir_of_curr_exec = dir_of_inp_file + 'COSPEDBTree'
+		dir_of_curr_exec = dir_of_inp_file + 'COSPEDBTree_Bin_Oldest'
 		"""
 		according to the settings of input parameters, 
 		output directory name is customized
 		"""
-		dir_of_curr_exec = dir_of_curr_exec + '_Q_' + str(NO_OF_QUEUES)
 		if (BINARY_SUPERTREE_OPTION == True):
 			dir_of_curr_exec = dir_of_curr_exec + '_B_1'
 		else:
@@ -197,9 +180,10 @@ def main():
 			dir_of_curr_exec = dir_of_curr_exec + '_W_1'
 		else:
 			dir_of_curr_exec = dir_of_curr_exec + '_W_0'
-		#dir_of_curr_exec = dir_of_curr_exec + '_X_' + str(MPP_SOLVE_METRIC)
+
 		if (BINARY_SUPERTREE_OPTION == True):
 			dir_of_curr_exec = dir_of_curr_exec + '_N_' + str(NJ_RULE_USED) + '_D_' + str(DIST_MAT_TYPE)
+
 		""" 
 		append the current output directory in the text file
 		"""
@@ -210,6 +194,7 @@ def main():
 		if (os.path.isdir(dir_of_curr_exec) == False):
 			mkdr_cmd = 'mkdir ' + dir_of_curr_exec
 			os.system(mkdr_cmd)               
+	
 	else:
 		k = OUTPUT_FILENAME.rfind("/")
 		if (k == -1):
@@ -229,7 +214,6 @@ def main():
 	fp.write('\n ================ status of options ================= (1 means ON)')
 	fp.write('\n ROOTED_TREE: ' + str(ROOTED_TREE))
 	fp.write('\n PRESERVE_UNDERSCORE: ' + str(PRESERVE_UNDERSCORE))
-	fp.write('\n NO_OF_QUEUES: ' + str(NO_OF_QUEUES))
 	fp.write('\n BINARY SUPERTREE OPTION: ' + str(BINARY_SUPERTREE_OPTION))
 	fp.write('\n ===>>>  processing the file now ======== ')
 
@@ -248,7 +232,6 @@ def main():
 	individual elements of this collection is a source tree 
 	"""
 	Input_Treelist = Read_Input_Treelist(ROOTED_TREE, PRESERVE_UNDERSCORE, INPUT_FILE_FORMAT, INPUT_FILENAME)  
-
 	#-------------------------------------  
 	""" 
 	from the input trees, note the number of taxa (total)
@@ -285,6 +268,25 @@ def main():
 
 	if (DEBUG_LEVEL >= 0):
 		fp_time.write('\n Time taken to read the taxa information: ' + str(data_read_timestamp1 - start_timestamp))
+		
+	#---------------------------
+	"""
+	here we add for individual taxon, the input trees supporting this taxon
+	"""
+	for tr_idx in range(len(Input_Treelist)):
+		taxa_labels_curr_tree = Input_Treelist[tr_idx].infer_taxa().labels()
+		for t in taxa_labels_curr_tree:
+			taxa_idx = COMPLETE_INPUT_TAXA_LIST.index(t)
+			Taxa_Info_Dict[taxa_idx]._AddSupportTree(tr_idx)
+
+	#---------------------------
+	if (DEBUG_LEVEL >= 2):
+		fp = open(Output_Text_File, 'a')
+		fp.write('\n\n\n ***** Printing information of all taxa and their support tree count **** \n\n\n')
+		for i in range(len(COMPLETE_INPUT_TAXA_LIST)):
+			fp.write('\n\n *** Taxa idx: ' + str(i) + '  Label: ' + str(COMPLETE_INPUT_TAXA_LIST[i]) + \
+				'  Supporting tree list: ' + str(Taxa_Info_Dict[i]._GetSupportTreeList()))
+		fp.close()
 	#---------------------------
 	"""
 	for individual couplets, this function lists all the taxa 
@@ -297,7 +299,8 @@ def main():
 	data_read_timestamp2 = time.time()	# note the timestamp
 	
 	if (DEBUG_LEVEL >= 0):
-		fp_time.write('\n Time taken to compute the underlying taxon for weight computation: ' + str(data_read_timestamp2 - start_timestamp))
+		fp_time.write('\n\n Time taken to compute the underlying taxon for weight computation: ' \
+			+ str(data_read_timestamp2 - start_timestamp))
 	#---------------------------
 	"""
 	now process individual trees to find the couplet relations within those trees
@@ -309,7 +312,8 @@ def main():
 	data_read_timestamp3 = time.time()
 	
 	if (DEBUG_LEVEL >= 0):
-		fp_time.write('\n Time taken to read the couplet relations: ' + str(data_read_timestamp3 - data_read_timestamp2))
+		fp_time.write('\n Time taken to read the couplet relations: ' \
+			+ str(data_read_timestamp3 - data_read_timestamp2))
 	
 	if (DEBUG_LEVEL > 2):
 		fp.write('\n len Taxa_Info_Dict: ' + str(len(Taxa_Info_Dict)))
@@ -318,7 +322,8 @@ def main():
 	
 	fp.close()
 		
-	data_read_timestamp = time.time()	# note the timestamp
+	# note the timestamp
+	data_read_timestamp = time.time()
 	#------------------------------------------------------------
 	""" 
 	Here we allocate the list / storage space of taxa clusters
@@ -332,174 +337,179 @@ def main():
 		Create_Cluster_Taxa_Label(i, COMPLETE_INPUT_TAXA_LIST[i])
 
 	#------------------------------------------------------------
-	""" 
-	we initialize the Reachability_Graph_Mat
-	dimension: N X N where N = number of taxa clusters = number of taxa (initially)
-	this is a numpy 2D array 
-	values Mat[x][y] = 1 means x->y
-	Mat[x][y] = Mat[y][x] = 2 means x and y are connected via relation r4
-	as taxa subsets are clustered, no of distinct taxa clusters reduces
-	so, this matrix dimension is also decreased
-	"""
-	Reachability_Graph_Mat = numpy.zeros((number_of_taxa, number_of_taxa), dtype=numpy.int)
-	#------------------------------------------------------------
 	"""
 	here we analyze individual couplets and fill the support score queues
 	with the supported relations
 	"""
-	Fill_Support_Score_Queues_Couplet_Based_Reln_R3()
+	Fill_Support_Score_Queues_Couplet_Based()
 	
-	"""
-	we print the information for individual couplets
-	"""
+	#-----------------------------------------------------------
 	if (DEBUG_LEVEL >= 2):
+		fp = open(Output_Text_File, 'a')
+		fp.write('\n\n\n ***** Printing information of all the couplets **** \n\n\n')
+		fp.close()
 		for l in TaxaPair_Reln_Dict:
-			#print 'printing info for the TaxaPair_Reln_Dict key: ', l
-			TaxaPair_Reln_Dict[l]._PrintRelnInfo(l, Output_Text_File)
+			TaxaPair_Reln_Dict[l]._PrintRelnInfo(l, Output_Text_File, WEIGHT_TAXA_SUBSET)
 	
+	#-------------------------------------------------------------------------------
+	"""
+	first process the queues containing the R3 relations 
+	as a consensus or as a single occurring relation between a couplet
+	to process corresponding couplets
+	"""
 	if (DEBUG_LEVEL > 0):
 		fp = open(Output_Text_File, 'a')
-		fp.write('\n\n\n *****  Now processing the couplets to create individual taxa clusters (connected by R3 relation) **** \n\n')
+		fp.write('\n\n\n *****  Now processing the following couplets \n 1) Only R3 relation supported, \
+			2) R3 relation is majority consensus **** \n\n')
 		fp.close()
-		
-	"""
-	sorting the queue storing R3 relations between individual couplets
-	there are 2 queues:
-	1) R3 relation is the only relation between the corresponding non-conflicting couplet
-	2) R3 relation is the majority consensus relation between the corresponding conflicting couplet
-	"""
+
 	if (len(Queue_Score_R3_SingleReln) > 0):
 		Sort_Priority_Queue(Queue_Score_R3_SingleReln)
-	
+		Proc_Queue_Couplet_Reln_R3(Output_Text_File, 1)
+
 	if (len(Queue_Score_R3_MajCons) > 0):
 		Sort_Priority_Queue(Queue_Score_R3_MajCons)
-	
-	"""
-	then we process these support score queues
-	to check whether clusters can be merged
-	"""
-	if (len(Queue_Score_R3_SingleReln) > 0):
-		Reachability_Graph_Mat = Proc_Queue_RelnR3(Reachability_Graph_Mat, Output_Text_File, 1)
-		
-	if (len(Queue_Score_R3_MajCons) > 0):
-		Reachability_Graph_Mat = Proc_Queue_RelnR3(Reachability_Graph_Mat, Output_Text_File, 2)
-		
-	data_initialize_timestamp = time.time()	# note the timestamp
-	
-	# print the cluster information 
-	if (DEBUG_LEVEL > 0):
-		fp = open(Output_Text_File, 'a')
-		fp.write('\n **** total number of clusters: ' + str(len(CURRENT_CLUST_IDX_LIST)))
-		fp.write('\n CURRENT_CLUST_IDX_LIST contents: ')
-		fp.write(str(CURRENT_CLUST_IDX_LIST))
-		fp.write('\n\n\n ========== Initially formed taxa clusters =============\n\n')
-		fp.close()
-		for i in Cluster_Info_Dict:
-			#print 'printing the information for cluster node: ', i
-			Cluster_Info_Dict[i]._PrintClusterInfo(i, Output_Text_File, True)
+		Proc_Queue_Couplet_Reln_R3(Output_Text_File, 2)
+
+	# note the timestamp
+	data_initialize_timestamp = time.time()
 	
 	#------------------------------------------------------------
+	"""
+	this is the total number of taxa clusters
+	individually containing one or more taxon
+	which are themselves related via R3 relation
+	"""
+	nClusters = len(CURRENT_CLUST_IDX_LIST)
 	
+	#------------------------------------------------------------
+	""" 
+	we initialize the Reachability_Graph_Mat
+	dimension: N X N where N = number of taxa clusters
+	this is a numpy 2D array 
+	values Mat[x][y] = 1 means x->y
+	Mat[x][y] = Mat[y][x] = 2 means x and y are connected via relation r4
+	"""
+	Reachability_Graph_Mat = numpy.zeros((nClusters, nClusters), dtype=numpy.int)
+	
+	#------------------------------------------------------------
 	if (DEBUG_LEVEL > 0):
 		fp = open(Output_Text_File, 'a')
 		fp.write('\n\n\n *****  Now processing the pair of clusters for their connectivity **** \n\n')
 		fp.close()
 	
 	"""
-	now we check individual cluster pairs, check the score between them, 
-	and include these scores in the support score queue for the cluster pairs
+	now we check individual cluster pairs, and check the allowed relations between them
 	"""
-	Fill_Queue_Support_Score_Cluster_Pair(Output_Text_File)
+	Initialize_Cluster_Pair(Output_Text_File)
 
+	# print the cluster information 
+	if (DEBUG_LEVEL > 0):
+		fp = open(Output_Text_File, 'a')
+		fp.write('\n\n\n ========== Initially formed taxa clusters (Initialize_Cluster_Pair) =============\n\n')
+		fp.close()
+		for i in Cluster_Info_Dict:
+			#print 'printing the information for cluster node: ', i
+			Cluster_Info_Dict[i]._PrintClusterInfo(i, Output_Text_File, False)
+
+	#----------------------------------------------------------
+	if (DEBUG_LEVEL >= 2):
+		fp = open(Output_Text_File, 'a')
+		fp.write('\n\n\n ***** Printing information of all the cluster pairs **** \n\n\n')
+		fp.close()
+		for l in Cluster_Pair_Info_Dict:
+			r1_freq = Cluster_Pair_Info_Dict[l]._GetFreq(RELATION_R1)
+			r2_freq = Cluster_Pair_Info_Dict[l]._GetFreq(RELATION_R2)
+			r3_freq = Cluster_Pair_Info_Dict[l]._GetFreq(RELATION_R3)
+			r4_freq = Cluster_Pair_Info_Dict[l]._GetFreq(RELATION_R4)
+			if (r1_freq == 0) and (r2_freq == 0) and (r3_freq == 0) and (r4_freq > 0):
+				continue
+			else:
+				Cluster_Pair_Info_Dict[l]._PrintClusterPairInfo(l, Output_Text_File)
+	#----------------------------------------------------------
+	# comment - sourya
+	#"""
+	#form a support score queue which contain information of only those cluster pair
+	#having R4 as their only allowed relation
+	#"""
+	#Form_NonConflict_Support_Score_Queue(Output_Text_File)
+
+	#"""
+	#now check the clusters having either R1 / R2 as their supported relations
+	#in such a case, for individual R1 / R2 relations, find its transitive connectivity
+	#"""
+	#Check_Transitive_R1R2_Allowed_Connections(Output_Text_File)
+
+	"""
+	form the support score queue for the cluster pairs having either R1 or R2 (or both)
+	as their allowed relation
+	"""
+	Form_Conflict_Support_Score_Queue()
+	#-------------------------------------------------------
 	"""
 	sorting the queue containing the support scores for individual cluster pairs
-	"""
-	if (len(Queue_Score_Cluster_Pair) > 0):
-		Sort_Priority_Queue(Queue_Score_Cluster_Pair)
-	
-	"""
 	then we process this support score queue and relate individual pair of clusters 
-	via the relations R1, R2 or R4
 	"""
-	if (len(Queue_Score_Cluster_Pair) > 0):
-		Reachability_Graph_Mat = Proc_Queue_Clust(Reachability_Graph_Mat, Output_Text_File)
-	#------------------------------------------------------------
+	if (len(Queue_Score_Cluster_Pair_NonConflict) > 0):
+		Sort_Priority_Queue(Queue_Score_Cluster_Pair_NonConflict)	#, 1)
+		Reachability_Graph_Mat = Proc_Queue_Clust(Reachability_Graph_Mat, Output_Text_File, 1)
 
-	## print the cluster information 
-	#if (DEBUG_LEVEL > 0):
-		#fp = open(Output_Text_File, 'a')
-		#fp.write('\n **** total number of clusters: ' + str(len(CURRENT_CLUST_IDX_LIST)))
-		#fp.write('\n CURRENT_CLUST_IDX_LIST contents: ')
-		#fp.write(str(CURRENT_CLUST_IDX_LIST))
-		#fp.write('\n\n\n ========== cluster information after reachability graph generation =============\n\n')
-		#fp.close()
-		#for i in Cluster_Info_Dict:
-			##print 'printing the information for cluster node: ', i
-			#Cluster_Info_Dict[i]._PrintClusterInfo(i, Output_Text_File)
+	if (len(Queue_Score_Cluster_Pair) > 0):
+		Sort_Priority_Queue(Queue_Score_Cluster_Pair)	#2)
+		Reachability_Graph_Mat = Proc_Queue_Clust(Reachability_Graph_Mat, Output_Text_File, 2)
+
+	#------------------------------------------------------------
+	# print the cluster information 
+	if (DEBUG_LEVEL > 0):
+		fp = open(Output_Text_File, 'a')
+		fp.write('\n **** total number of clusters: ' + str(len(CURRENT_CLUST_IDX_LIST)))
+		fp.write('\n CURRENT_CLUST_IDX_LIST contents: ')
+		fp.write(str(CURRENT_CLUST_IDX_LIST))
+		fp.write('\n\n\n ========== cluster information after processing Queue_Score_Cluster_Pair =============\n\n')
+		fp.close()
+		for i in Cluster_Info_Dict:
+			#print 'printing the information for cluster node: ', i
+			Cluster_Info_Dict[i]._PrintClusterInfo(i, Output_Text_File)
 
 	# note the timestamp
 	reachability_graph_form_timestamp = time.time()  
 
-	#------------------------------------------------------------
-	# add - sourya
-	"""
-	check whether any pair of cluster is not connected (both reach matrix entries are 0)
-	and whether they can be connected by any directed edge
-	"""
-	Reachability_Graph_Mat = Check_Cluster_Not_Connected(Reachability_Graph_Mat, Output_Text_File)
-	
-	# end add - sourya
-	#------------------------------------------------------------
-	# add - sourya
-	"""
-	here we check the cluster pairs having R4 relation between them
-	for such clusters, we check if there exists possible R1 / R2 relations between them
-	and update the cluster information accordingly
-	"""
-	Check_PossibleR1R2Reln(Reachability_Graph_Mat, Output_Text_File)
-	
-	# end add - sourya
-	#------------------------------------------------------------
-	"""
-	here check the clusters which do not have any R2 connection or possible R2 connection
-	"""
-	Reachability_Graph_Mat = Solve_NPP_NoPossibleR2(Reachability_Graph_Mat, Output_Text_File)
-	
+	##-------------------------------------------------------------
+	#"""
+	#check whether any pair of cluster is not connected (both reach matrix entries are 0)
+	#and whether they can be connected by any directed edge
+	#"""
+	#Reachability_Graph_Mat = Check_Cluster_Not_Connected(Reachability_Graph_Mat, Output_Text_File)
+
 	## print the cluster information 
 	#if (DEBUG_LEVEL > 0):
 		#fp = open(Output_Text_File, 'a')
 		#fp.write('\n **** total number of clusters: ' + str(len(CURRENT_CLUST_IDX_LIST)))
 		#fp.write('\n CURRENT_CLUST_IDX_LIST contents: ')
 		#fp.write(str(CURRENT_CLUST_IDX_LIST))    
-		#fp.write('\n\n\n ========== cluster information after **** Cluster pair not connected +++ Solve_NPP_NoPossibleR2 **** =============\n\n')
+		#fp.write('\n\n\n ========== cluster information after **** Check_Cluster_Not_Connected **** =============\n\n')
 		#fp.close()
 		#for i in Cluster_Info_Dict:
 			##print 'printing the information for cluster node: ', i
 			#Cluster_Info_Dict[i]._PrintClusterInfo(i, Output_Text_File)
+
+	###------------------------------------------------------------
+	##"""
+	##here check the clusters which do not have any R2 connection or possible R2 connection
+	##"""
+	##Reachability_Graph_Mat = Solve_NPP_NoPossibleR2(Reachability_Graph_Mat, Output_Text_File)
 	
-	#------------------------------------------------------------
-	"""
-	we make a copy of the cluster dictionary so far - it will be required for finding the clusters with min indegree
-	Note: we use the function deepcopy
-	since, we not only copy the dictionary, but their underlying class instances as well
-	"""
-	Cluster_Dict_Backup = copy.deepcopy(Cluster_Info_Dict)
-	
-	"""
-	compute the set of distinct possible R2 clusters for each of the clusters
-	Note: this operation is performed on the newly created class instance copies
-	"""
-	for i in Cluster_Dict_Backup:
-		Cluster_Dict_Backup[i]._ComputeDistinctPossibleR2List()
-		
-	# print the cluster information 
-	if (DEBUG_LEVEL > 0):
-		fp = open(Output_Text_File, 'a')
-		fp.write('\n\n\n ========== Backup Cluster Dict information =============\n\n')
-		fp.close()
-		for i in Cluster_Dict_Backup:
-			#print 'printing the information for cluster node: ', i
-			Cluster_Dict_Backup[i]._PrintClusterInfo(i, Output_Text_File)
+	#### print the cluster information 
+	###if (DEBUG_LEVEL > 0):
+		###fp = open(Output_Text_File, 'a')
+		###fp.write('\n **** total number of clusters: ' + str(len(CURRENT_CLUST_IDX_LIST)))
+		###fp.write('\n CURRENT_CLUST_IDX_LIST contents: ')
+		###fp.write(str(CURRENT_CLUST_IDX_LIST))    
+		###fp.write('\n\n\n ========== cluster information after **** Cluster pair not connected +++ Solve_NPP_NoPossibleR2 **** =============\n\n')
+		###fp.close()
+		###for i in Cluster_Info_Dict:
+			####print 'printing the information for cluster node: ', i
+			###Cluster_Info_Dict[i]._PrintClusterInfo(i, Output_Text_File)
 	
 	#------------------------------------------------------------
 	""" 
@@ -512,17 +522,14 @@ def main():
 	"""
 	CompressDirectedGraph(Reachability_Graph_Mat, Output_Text_File)
 	
-	## print the cluster information 
-	#if (DEBUG_LEVEL > 0):
-		#fp = open(Output_Text_File, 'a')
-		#fp.write('\n **** total number of clusters: ' + str(len(CURRENT_CLUST_IDX_LIST)))
-		#fp.write('\n CURRENT_CLUST_IDX_LIST contents: ')
-		#fp.write(str(CURRENT_CLUST_IDX_LIST))    
-		#fp.write('\n\n\n ========== cluster information after transitive reduction =============\n\n')
-		#fp.close()
-		#for i in Cluster_Info_Dict:
-			##print 'printing the information for cluster node: ', i
-			#Cluster_Info_Dict[i]._PrintClusterInfo(i, Output_Text_File)
+	# print the cluster information 
+	if (DEBUG_LEVEL > 0):
+		fp = open(Output_Text_File, 'a')
+		fp.write('\n\n\n ========== cluster information after transitive reduction =============\n\n')
+		fp.close()
+		for i in Cluster_Info_Dict:
+			#print 'printing the information for cluster node: ', i
+			Cluster_Info_Dict[i]._PrintClusterInfo(i, Output_Text_File)
 	
 	#------------------------------------------------------------
 	"""
@@ -531,120 +538,237 @@ def main():
 	this will solve the multiple parent problem C2 as discussed in the manuscript 
 	this is a new addition and marked under the DFS based parent refinement option 
 	"""
-	SelectUniqueParent_Directed(Output_Text_File)
+	#SelectUniqueParent_Directed_SupportScore(Reachability_Graph_Mat, Output_Text_File)
+	SelectUniqueParent_Directed_Internode(Reachability_Graph_Mat, Output_Text_File)
 	
 	# print the cluster information 
 	if (DEBUG_LEVEL > 0):
 		fp = open(Output_Text_File, 'a')
-		fp.write('\n **** total number of clusters: ' + str(len(CURRENT_CLUST_IDX_LIST)))
-		fp.write('\n CURRENT_CLUST_IDX_LIST contents: ')
-		fp.write(str(CURRENT_CLUST_IDX_LIST))    
-		fp.write('\n\n\n ========== cluster information after solving MPP (directed edge) =============\n\n')
+		fp.write('\n\n\n ========== cluster information after solving Transitive Reduction + MPP (for directed edges) =============\n\n')
 		fp.close()
 		for i in Cluster_Info_Dict:
 			#print 'printing the information for cluster node: ', i
 			Cluster_Info_Dict[i]._PrintClusterInfo(i, Output_Text_File)
 	
-	#------------------------------------------------------------
-	"""
-	Resolve the possible R2 lists for individual clusters
-	Let A--->B and C---->B
-	we have to choose between A and C
-	Let X->B,   X->A,   Y->C,  and  X->Y
-	In such a case, we choose C--->B
-	"""
-	RemovePossibleR2List_DiffParent(Reachability_Graph_Mat, Output_Text_File)
 	
-	# print the cluster information 
-	if (DEBUG_LEVEL > 0):
-		fp = open(Output_Text_File, 'a')
-		fp.write('\n **** total number of clusters: ' + str(len(CURRENT_CLUST_IDX_LIST)))
-		fp.write('\n CURRENT_CLUST_IDX_LIST contents: ')
-		fp.write(str(CURRENT_CLUST_IDX_LIST))    
-		fp.write('\n\n\n ========== cluster information after RemovePossibleR2List_DiffParent =============\n\n')
-		fp.close()
-		for i in Cluster_Info_Dict:
-			#print 'printing the information for cluster node: ', i
-			Cluster_Info_Dict[i]._PrintClusterInfo(i, Output_Text_File)
 	
-	#------------------------------------------------------------
-	"""
-	here we create another matrix Clust_Possible_R1_Mat of dimension 
-	len(CURRENT_CLUST_IDX_LIST) X len(CURRENT_CLUST_IDX_LIST)
 	
-	this is a numpy 2D array 
-	values Mat[x][y] = 1 means x->y in terms of possible R1 candidate
-	"""
-	Clust_Possible_R1_Mat = numpy.zeros((len(CURRENT_CLUST_IDX_LIST), len(CURRENT_CLUST_IDX_LIST)), dtype=numpy.int)
-	for x in Cluster_Info_Dict:
-		mat_x_idx = CURRENT_CLUST_IDX_LIST.index(x)
-		x_poss_R1_list = Cluster_Info_Dict[x]._GetPossibleR1List()
-		if (len(x_poss_R1_list) > 0):
-			for y in x_poss_R1_list:
-				mat_y_idx = CURRENT_CLUST_IDX_LIST.index(y)
-				Clust_Possible_R1_Mat[mat_x_idx][mat_y_idx] = 1
-	
-	#------------------------------------------------------------
-	"""
-	This is transitive reduction of the DAG
-	in terms of the dashed edges
-	"""
-	Transitive_Reduction_Dashed(Clust_Possible_R1_Mat, Output_Text_File)
-	
-	# print the cluster information 
-	if (DEBUG_LEVEL > 0):
-		fp = open(Output_Text_File, 'a')
-		fp.write('\n **** total number of clusters: ' + str(len(CURRENT_CLUST_IDX_LIST)))
-		fp.write('\n CURRENT_CLUST_IDX_LIST contents: ')
-		fp.write(str(CURRENT_CLUST_IDX_LIST))    
-		fp.write('\n\n\n ========== cluster information after Transitive_Reduction_Dashed =============\n\n')
-		fp.close()
-		for i in Cluster_Info_Dict:
-			#print 'printing the information for cluster node: ', i
-			Cluster_Info_Dict[i]._PrintClusterInfo(i, Output_Text_File)
-	
-	#------------------------------------------------------------
-	"""
-	This is additional compression of the DAG
-	"""
-	CompressDAG_Dashed(Reachability_Graph_Mat, Clust_Possible_R1_Mat, Output_Text_File)
+	##-------------------------------------------------------
+	#"""
+	#we check whether there exists a cluster pair (clustA, clustB) such that 
+	#clustA->clustB should be actually represented as pseudo R1 relation
+	#"""
+	#for clustA in Cluster_Info_Dict:
+		#for clustB in Cluster_Info_Dict[clustA]._GetClustRelnList(RELATION_R1):
+			#Check_Possible_R1_Reln(clustA, clustB)
 
-	"""
-	now compute the set of distinct possible R2 clusters for each of the clusters
-	"""
-	for i in Cluster_Info_Dict:
-		Cluster_Info_Dict[i]._ComputeDistinctPossibleR2List()
+	##------------------------------------------------------------
+	#"""
+	#here we check the cluster pairs having R4 relation between them
+	#for such clusters, we check if there exists possible R1 / R2 relations between them
+	#and update the cluster information accordingly
+	#"""
+	#Check_PossibleR1R2Reln(Reachability_Graph_Mat, Output_Text_File)
 
-	# print the cluster information 
-	if (DEBUG_LEVEL > 0):
-		fp = open(Output_Text_File, 'a')
-		fp.write('\n **** total number of clusters: ' + str(len(CURRENT_CLUST_IDX_LIST)))
-		fp.write('\n CURRENT_CLUST_IDX_LIST contents: ')
-		fp.write(str(CURRENT_CLUST_IDX_LIST))    
-		fp.write('\n\n\n ========== cluster information after CompressDAG_Dashed =============\n\n')
-		fp.close()
-		for i in Cluster_Info_Dict:
-			#print 'printing the information for cluster node: ', i
-			Cluster_Info_Dict[i]._PrintClusterInfo(i, Output_Text_File)
+	##------------------------------------------------------------
+	#"""
+	#compute the set of distinct possible R2 clusters for each of the clusters
+	#Note: this operation is performed on the newly created class instance copies
+	#"""
+	#for i in Cluster_Info_Dict:
+		#Cluster_Info_Dict[i]._ComputeDistinctPossibleR2List()
+
+	#"""
+	#we make a copy of the cluster dictionary so far - it will be required for finding the clusters with min indegree
+	#Note: we use the function deepcopy
+	#since, we not only copy the dictionary, but their underlying class instances as well
+	#"""
+	#Cluster_Dict_Backup = copy.deepcopy(Cluster_Info_Dict)
 	
-	#------------------------------------------------------------
-	"""
-	first check for individual clusters their possible R1 / R2 lists
-	and remove ambiguous connections
-	"""
-	Solve_MPP_PossibleR1R2(Output_Text_File, Cluster_Dict_Backup)
+	##"""
+	##compute the set of distinct possible R2 clusters for each of the clusters
+	##Note: this operation is performed on the newly created class instance copies
+	##"""
+	##for i in Cluster_Dict_Backup:
+		##Cluster_Dict_Backup[i]._ComputeDistinctPossibleR2List()
+		
+	## print the cluster information 
+	#if (DEBUG_LEVEL > 0):
+		#fp = open(Output_Text_File, 'a')
+		#fp.write('\n\n\n ========== Backup Cluster Dict information =============\n\n')
+		#fp.close()
+		#for i in Cluster_Dict_Backup:
+			##print 'printing the information for cluster node: ', i
+			#Cluster_Dict_Backup[i]._PrintClusterInfo(i, Output_Text_File)
 	
-	# print the cluster information 
-	if (DEBUG_LEVEL > 0):
-		fp = open(Output_Text_File, 'a')
-		fp.write('\n **** total number of clusters: ' + str(len(CURRENT_CLUST_IDX_LIST)))
-		fp.write('\n CURRENT_CLUST_IDX_LIST contents: ')
-		fp.write(str(CURRENT_CLUST_IDX_LIST))    
-		fp.write('\n\n\n ========== cluster information after Solve_MPP_PossibleR1R2 =============\n\n')
-		fp.close()
-		for i in Cluster_Info_Dict:
-			#print 'printing the information for cluster node: ', i
-			Cluster_Info_Dict[i]._PrintClusterInfo(i, Output_Text_File)
+	###------------------------------------------------------------
+	##"""
+	##we check those clusters who do not have any in edges (R2 relation list)
+	##in such a case, we check where to fit the clusters (in terms of either R1, possible R1, or possible R2 lists)
+	##"""
+	##Resolve_Cluster_ZeroIndegree(Output_Text_File)
+
+
+
+
+
+
+
+
+	
+	###------------------------------------------------------------
+	##"""
+	##Resolve the possible R2 lists for individual clusters cx
+	##Let the following cases are true:
+		##1) cx_parent -> cx
+		##2) x ---> cx
+		##3) x_parent -> x
+	##We have to select whether we retain cx_parent as the ancestor of cx
+	##or we enforce x ---> cx as the primary connection to traverse cx
+	##"""
+
+	##"""
+	##this is a list used in conjunction with the function RemovePossibleR2List_DiffParent
+	##contains three fields per elements
+	##"""
+	##Temporary_Cluster_Reln_List = []
+	
+	##RemovePossibleR2List_DiffParent(Output_Text_File, Temporary_Cluster_Reln_List)
+	
+	### add - sourya
+	##if (len(Temporary_Cluster_Reln_List) > 0):
+		##for c in Temporary_Cluster_Reln_List:
+			##Remove_ClusterPairConn(c[0], c[1], c[2])
+	
+	#### reset the list
+	####Temporary_Cluster_Reln_List[:] = []
+	###Temporary_Cluster_Reln_List = []
+	#### end add - sourya
+	
+	### print the cluster information 
+	##if (DEBUG_LEVEL > 0):
+		##fp = open(Output_Text_File, 'a')
+		##fp.write('\n\n\n ========== cluster information after RemovePossibleR2List_DiffParent =============\n\n')
+		##fp.close()
+		##for i in Cluster_Info_Dict:
+			###print 'printing the information for cluster node: ', i
+			##Cluster_Info_Dict[i]._PrintClusterInfo(i, Output_Text_File)
+	
+	
+	
+	
+	####------------------------------------
+	#### add - debug - sourya
+	###"""
+	###for individual clusters cx, check its direct descendant (R1) list
+	###for each such pair of cx->x and cx->y, 
+	###print relation between x, y  (either x-->y, y-->x, or x<-->y)
+	###"""
+	###if (DEBUG_LEVEL > 0):
+		###fp = open(Output_Text_File, 'a')
+		
+	###for cx in Cluster_Info_Dict:
+		###cx_R1_list = Cluster_Info_Dict[cx]._GetClustRelnList(RELATION_R1)
+		###if (len(cx_R1_list) > 1):
+			###if (DEBUG_LEVEL > 0):
+				###fp.write('\n\n\n Multi outdegree cluster : ' + str(cx) + ' its R1 list: ' + str(cx_R1_list))
+			###for i in range(len(cx_R1_list) - 1):
+				###cl1 = cx_R1_list[i]
+				###for j in range(i+1, len(cx_R1_list)):
+					###cl2 = cx_R1_list[j]
+					###if (DEBUG_LEVEL > 0):
+						###fp.write('\n Examining the pair: ' + str(cl1) + '  and  ' + str(cl2))
+					###if cl2 in Cluster_Info_Dict[cl1]._GetPossibleR1List():
+						###if (DEBUG_LEVEL > 0):
+							###fp.write('  ' + str(cl1) + ' ---> ' + str(cl2))
+					###if cl2 in Cluster_Info_Dict[cl1]._GetPossibleR2List():
+						###if (DEBUG_LEVEL > 0):
+							###fp.write('  ' + str(cl1) + ' <--- ' + str(cl2))
+	
+	###if (DEBUG_LEVEL > 0):
+		###fp.close()
+	#### end add - debug - sourya
+	
+	####------------------------------------------------------------
+	###"""
+	###here we create another matrix Clust_Possible_R1_Mat of dimension 
+	###len(CURRENT_CLUST_IDX_LIST) X len(CURRENT_CLUST_IDX_LIST)
+	
+	###this is a numpy 2D array 
+	###values Mat[x][y] = 1 means x->y in terms of possible R1 candidate
+	###"""
+	###Clust_Possible_R1_Mat = numpy.zeros((len(CURRENT_CLUST_IDX_LIST), len(CURRENT_CLUST_IDX_LIST)), dtype=numpy.int)
+	###for x in Cluster_Info_Dict:
+		###mat_x_idx = CURRENT_CLUST_IDX_LIST.index(x)
+		###x_poss_R1_list = Cluster_Info_Dict[x]._GetPossibleR1List()
+		###if (len(x_poss_R1_list) > 0):
+			###for y in x_poss_R1_list:
+				###mat_y_idx = CURRENT_CLUST_IDX_LIST.index(y)
+				###Clust_Possible_R1_Mat[mat_x_idx][mat_y_idx] = 1
+	
+	####------------------------------------------------------------
+	###"""
+	###This is transitive reduction of the DAG
+	###in terms of the dashed edges
+	###"""
+	###Transitive_Reduction_Dashed(Clust_Possible_R1_Mat, Output_Text_File)
+	
+	#### print the cluster information 
+	###if (DEBUG_LEVEL > 0):
+		###fp = open(Output_Text_File, 'a')
+		###fp.write('\n\n\n ========== cluster information after Transitive_Reduction_Dashed =============\n\n')
+		###fp.close()
+		###for i in Cluster_Info_Dict:
+			####print 'printing the information for cluster node: ', i
+			###Cluster_Info_Dict[i]._PrintClusterInfo(i, Output_Text_File)
+	
+	
+	####------------------------------------------------------------
+	###"""
+	###This is additional compression of the DAG
+	###"""
+	###CompressDAG_Dashed(Clust_Possible_R1_Mat, Output_Text_File)
+
+	#### print the cluster information 
+	###if (DEBUG_LEVEL > 0):
+		###fp = open(Output_Text_File, 'a')
+		###fp.write('\n\n\n ========== cluster information after Transitive_Reduction_Dashed + CompressDAG_Dashed =============\n\n')
+		###fp.close()
+		###for i in Cluster_Info_Dict:
+			####print 'printing the information for cluster node: ', i
+			###Cluster_Info_Dict[i]._PrintClusterInfo(i, Output_Text_File)
+
+
+
+
+
+
+
+
+
+	
+	
+	####------------------------------------------------------------
+	###"""
+	###first check for individual clusters their possible R1 / R2 lists
+	###and remove ambiguous connections
+	###"""
+	###Solve_MPP_PossibleR1R2(Output_Text_File)
+
+	###"""
+	###now compute the set of distinct possible R2 clusters for each of the clusters
+	###"""
+	###for i in Cluster_Info_Dict:
+		###Cluster_Info_Dict[i]._ComputeDistinctPossibleR2List()
+
+	#### print the cluster information 
+	###if (DEBUG_LEVEL > 0):
+		###fp = open(Output_Text_File, 'a')
+		###fp.write('\n\n\n ========== cluster information after Solve_MPP_PossibleR1R2 =============\n\n')
+		###fp.close()
+		###for i in Cluster_Info_Dict:
+			####print 'printing the information for cluster node: ', i
+			###Cluster_Info_Dict[i]._PrintClusterInfo(i, Output_Text_File)
 
 	# note the timestamp
 	cluster_of_node_refine_species_timestamp1 = time.time()  
@@ -663,16 +787,17 @@ def main():
 	"""
 	no_of_components = 0	# for forest
 	while (1):
-		root_clust_node_idx = Extract_Node_Min_Indeg(Output_Text_File, Cluster_Dict_Backup)
+		root_clust_node_idx = Extract_Node_Min_Indeg(Output_Text_File, Cluster_Info_Dict)	# Cluster_Dict_Backup)
 		if (root_clust_node_idx == -1):
 			break
 		"""
 		this queue stores the cluster indices which are explored, so that no repetetitive clusters 
 		are present
 		"""
-		queue_cluster = []
-		print '\n\n\n ********** Before a fresh call of PrintNewick function **** \n\n\n'
-		Tree_Str = PrintNewick(Reachability_Graph_Mat, root_clust_node_idx, queue_cluster)
+		#queue_cluster = []
+		#print '\n\n\n ********** Before a fresh call of PrintNewick function **** \n\n\n'
+		#Tree_Str = PrintNewick(root_clust_node_idx, queue_cluster)
+		Tree_Str = PrintNewick(root_clust_node_idx)
 		if (DEBUG_LEVEL >= 2):
 			fp = open(Output_Text_File, 'a')
 			fp.write('\n\n *** Tree_Str: ' + Tree_Str + '   *** \n\n')
@@ -686,17 +811,17 @@ def main():
 			fp = open(Output_Text_File, 'a')
 			fp.write('\n\n *** Final_Supertree_Str: ' + Final_Supertree_Str + '   *** \n\n')
 			fp.close()
-		#-----------------------------
-		# add - sourya
-		"""
-		here we copy the explored status information 
-		"""
-		for i in Cluster_Info_Dict:
-			if (Cluster_Info_Dict[i]._GetExploredStatus() == 1):
-				Cluster_Dict_Backup[i]._SetExploredStatus()
+		##-----------------------------
+		## add - sourya
+		#"""
+		#here we copy the explored status information 
+		#"""
+		#for i in Cluster_Info_Dict:
+			#if (Cluster_Info_Dict[i]._GetExploredStatus() == 1):
+				#Cluster_Dict_Backup[i]._SetExploredStatus()
 
-		# end add - sourya
-		#-----------------------------
+		## end add - sourya
+		##-----------------------------
 	""" 
 	with the final tree string, finally generate the tree result 
 	this is also required to tackle the creation of a forest during the DFS (no parent problem)
@@ -732,7 +857,7 @@ def main():
 		this function removes all multifurcating clusters and produces binary tree 
 		it also solves the problem C3, as mentioned in the manuscript
 		"""
-		Refine_Supertree_Binary_Form(Supertree_Final, Output_Text_File, NJ_RULE_USED, DIST_MAT_TYPE)
+		Supertree_Final = Refine_Supertree_Binary_Form(Input_Treelist, Supertree_Final, Output_Text_File, NJ_RULE_USED, DIST_MAT_TYPE)
 		fp = open(Output_Text_File, 'a')
 		fp.write('\n --- user provided option for producing strict binary supertree')
 		fp.write('\n --- after binary refinement --- output tree without branch length (in newick format): ' + Supertree_Final.as_newick_string())    
@@ -751,7 +876,6 @@ def main():
 		out_treefilename = OUTPUT_FILENAME
 
 	Supertree_Final.write_to_path(out_treefilename, 'newick')
-	
 	#---------------------------------
 	"""
 	Note: This seems to be a redundant operation, but an important one
@@ -792,6 +916,10 @@ def main():
 	sumLenSrcTree = 0
 	sum_symmetric_diff = 0
 	fp.write('\n \n\n total edges of supertree: ' + str(len(Supertree_Final.get_edge_set())))  
+
+
+	# add - sourya - debug
+	Input_Treelist = Read_Input_Treelist(ROOTED_TREE, PRESERVE_UNDERSCORE, INPUT_FILE_FORMAT, INPUT_FILENAME)  
 
 	for inp_tree_idx in range(len(Input_Treelist)):
 		Curr_src_tree = Input_Treelist[inp_tree_idx]
@@ -861,7 +989,8 @@ def main():
 	Cluster_Info_Dict.clear()
 	Taxa_Info_Dict.clear()
 	TaxaPair_Reln_Dict.clear()
-
+	Cluster_Pair_Info_Dict.clear()
+	
 	# clear the lists associated
 	if (len(Queue_Score_R3_SingleReln) > 0):
 		Queue_Score_R3_SingleReln[:] = []
@@ -869,6 +998,8 @@ def main():
 		Queue_Score_R3_MajCons[:] = []
 	if (len(Queue_Score_Cluster_Pair) > 0):
 		Queue_Score_Cluster_Pair[:] = []
+	if (len(Queue_Score_Cluster_Pair_NonConflict) > 0):
+		Queue_Score_Cluster_Pair_NonConflict[:] = []
 	if (len(COMPLETE_INPUT_TAXA_LIST) > 0):
 		COMPLETE_INPUT_TAXA_LIST[:] = []
 	if (len(CURRENT_CLUST_IDX_LIST) > 0):
@@ -880,5 +1011,5 @@ def main():
   
 #-----------------------------------------------------
 if __name__ == "__main__":
-    main() 
+	main() 
   
