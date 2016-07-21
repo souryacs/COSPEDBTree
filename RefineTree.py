@@ -21,7 +21,7 @@ def Fill_DistMat_SingleEntry(DistMat, no_of_clust, clust_species_list, DIST_MAT_
 			contain two taxa list of one or more elements
 			"""
 			if (DIST_MAT_TYPE == 1) or (DIST_MAT_TYPE == 2):
-				entry = FindAvgDistanceMeasure(clust_species_list[i], clust_species_list[j], DIST_MAT_TYPE, 1)
+				entry = FindAvgDistanceMeasure(clust_species_list[i], clust_species_list[j], DIST_MAT_TYPE, 2, 1)
 			elif (DIST_MAT_TYPE == 3):
 				entry = FindAvgDistanceMeasure(clust_species_list[i], clust_species_list[j], DIST_MAT_TYPE, 1, 0)	#2)
 			elif (DIST_MAT_TYPE == 4):
@@ -445,18 +445,7 @@ def ResolveMultifurcation_old(Curr_tree, clust_species_list, no_of_input_cluster
 		clust_species_list.pop(min_idx_i)
 		clust_species_list.pop(min_idx_j - 1)
 		
-		# comment - sourya
 		clust_species_list.append(taxa_list)    
-		
-		## add - sourya
-		#taxa_list_mrca_node = Curr_tree.mrca(taxon_labels=taxa_list)
-		#preorder_taxa_list = []
-		#for n in taxa_list_mrca_node.preorder_iter():
-			#if (n.is_leaf() == True):
-				#if n.taxon.label in taxa_list:
-					#preorder_taxa_list.append(n.taxon.label)
-		#clust_species_list.append(preorder_taxa_list)   
-		## end add - sourya
 		#---------------------------------------------------------      
 		"""
 		adjust the DistMat by inserting one new row and column corresponding to the new cluster
