@@ -4,8 +4,6 @@ import Header
 from Header import *
 import UtilFunc
 from UtilFunc import *
-import Conflict_Detect
-from Conflict_Detect import *
 
 #------------------------------------------------
 """
@@ -18,17 +16,13 @@ def Remove_ClusterPairConn(clust1, clust2, reln_type):
 
 #-------------------------------------------------
 """
-checks the "score_list_cx" and finds the maximum / minimum, depending on the measure employed
+checks the "score_list_cx" and finds the cluster with minimum internode count distance
 """
-def Find_Clust_Idx_Max_Criterion(score_list_cx, measure):
+def Find_Clust_Idx_Max_Criterion(score_list_cx):
 	target_clust_idx = 0
 	for i in range(1, len(score_list_cx)):
-		if ((measure == 1) or (measure == 2)):
-			if (score_list_cx[i][1] < score_list_cx[target_clust_idx][1]):
-				target_clust_idx = i
-		else:
-			if (score_list_cx[i][1] > score_list_cx[target_clust_idx][1]):
-				target_clust_idx = i
+		if (score_list_cx[i][1] < score_list_cx[target_clust_idx][1]):
+			target_clust_idx = i
 	
 	return target_clust_idx
 
@@ -37,7 +31,7 @@ def Find_Clust_Idx_Max_Criterion(score_list_cx, measure):
 this function solves multiple parent problem (C2)
 by uniquely selecting one particular parent
 """
-def SelectUniqueParent_Directed(Output_Text_File, measure):
+def SelectUniqueParent_Directed(Output_Text_File):
 	if (DEBUG_LEVEL >= 2):
 		fp = open(Output_Text_File, 'a')
 
@@ -56,22 +50,26 @@ def SelectUniqueParent_Directed(Output_Text_File, measure):
 			"""
 			score_list_cx = []
 			for cz in cx_R2_list:
+				"""
+				define inter cluster distance based on their internode count
+				"""
+				# initially the last argument was 1 - now it is set as 0 - check - sourya
 				cz_score = FindAvgDistanceMeasure(Cluster_Info_Dict[cz]._GetSpeciesList(), \
-					Cluster_Info_Dict[cx]._GetSpeciesList(), measure, 2, 1)	#0
-				
+					Cluster_Info_Dict[cx]._GetSpeciesList(), 2, 0)	#1
 				"""
 				create a list containing the cluster cz information
-				and also the support score and internode count measure
+				and also the internode count based distance value
 				"""
-				temp_subl = [cz, cz_score]
-				score_list_cx.append(temp_subl)
-				if (DEBUG_LEVEL >= 2):
-					fp.write('\n --- cluster (R2 reln): ' + str(cz) + '  Support score: ' + str(cz_score))
+				if (cz_score >= 0):	# added this condition - sourya
+					temp_subl = [cz, cz_score]
+					score_list_cx.append(temp_subl)
+					if (DEBUG_LEVEL >= 2):
+						fp.write('\n --- cluster (R2 reln): ' + str(cz) + '  Internode count distance: ' + str(cz_score))
 			
 			"""
-			determine the target cluster (according to the measure employed) which is the best
+			determine the target cluster (according to the internode count distance employed) which is the best
 			"""
-			target_score_clust_idx = Find_Clust_Idx_Max_Criterion(score_list_cx, measure)
+			target_score_clust_idx = Find_Clust_Idx_Max_Criterion(score_list_cx)
 			
 			"""
 			target cluster (best measure)
@@ -110,10 +108,7 @@ def SelectUniqueParent_Directed(Output_Text_File, measure):
 			and select the cluster with the highest support score as the parent of the current cluster
 			"""
 			if (len(subset_clust_list) > 0):
-				if (measure == 1) or (measure == 2):
-					subset_clust_list.sort(key=lambda x: x[1])
-				else:
-					subset_clust_list.sort(key=lambda x: x[1], reverse=True)
+				subset_clust_list.sort(key=lambda x: x[1])
 				target_clust_subset = subset_clust_list[0][0]
 				if (DEBUG_LEVEL >= 2):
 					fp.write('\n target_clust_subset: ' + str(target_clust_subset))
@@ -136,9 +131,6 @@ def SelectUniqueParent_Directed(Output_Text_File, measure):
 						if (DEBUG_LEVEL >= 2):
 							fp.write('\n Removed connection ' + str(target_delete_clust) + '->' + str(cx))
 			
-				#--------------------------------------------------------
-				# end
-				#--------------------------------------------------------
 			else:
 				"""
 				otherwise, we have already selected target_score_clust_idx and target_score_clust

@@ -122,12 +122,8 @@ def Proc_Queue_Couplet_Reln_R3(Output_Text_File, inp_no):
 this function processes the support score queue designed to contain the frequencies and 
 support scores for individual relations between a pair of cluster
 """
-def Proc_Queue_Clust(Reachability_Graph_Mat, Output_Text_File, inp_no):
-	if (inp_no == 1):
-		Inp_Queue = Queue_Score_Cluster_Pair_NonConflict
-	else:
-		Inp_Queue = Queue_Score_Cluster_Pair
-
+def Proc_Queue_Clust(Reachability_Graph_Mat, Output_Text_File):
+	Inp_Queue = Queue_Score_Cluster_Pair
 	while (0 < len(Inp_Queue)):
 		""" 
 		extract the 1st element of "Inp_Queue" 
@@ -142,20 +138,20 @@ def Proc_Queue_Clust(Reachability_Graph_Mat, Output_Text_File, inp_no):
 
 		if (DEBUG_LEVEL >= 2):
 			fp = open(Output_Text_File, 'a')
-			if (inp_no == 1):
-				fp.write('\n\n ===>> CLUSTER BASED (*** NONCONFLICTING ***) SUPPORT SCORE QUEUE -- ')      
-			else:
-				fp.write('\n\n ===>> CLUSTER BASED (*** CONFLICTING ***) SUPPORT SCORE QUEUE -- ')      
+			fp.write('\n\n ===>> CLUSTER BASED (*** CONFLICTING ***) SUPPORT SCORE QUEUE -- ')      
 			fp.write(' current extracted max element (cluster pair): ' + str(clust1) + ' and ' + str(clust2) + \
-					' relation type: ' + str(reln_type) + '  relation freq: ' + str(reln_freq) + '  conn score: ' + str(conn_score))
+					' relation type: ' + str(reln_type) + '  relation freq: ' \
+						+ str(reln_freq) + '  conn score: ' + str(conn_score))
 			fp.close()
 
 		"""
 		Note: we have re-written the conflict detection routine
-		if the current extracted relation does not induce a conflict to the existing configuration of the DAG, 
+		if the current extracted relation does not induce a 
+		conflict to the existing configuration of the DAG, 
 		include the connection in it 
 		"""
-		conflict_detection = Possible_Conflict_Curr_Reln(clust1, clust2, Reachability_Graph_Mat, reln_type, Output_Text_File)
+		conflict_detection = Possible_Conflict_Curr_Reln(clust1, clust2, \
+			Reachability_Graph_Mat, reln_type, Output_Text_File)
 		
 		if (conflict_detection == 0):
 			""" 
@@ -164,10 +160,7 @@ def Proc_Queue_Clust(Reachability_Graph_Mat, Output_Text_File, inp_no):
 			"""
 			if (DEBUG_LEVEL > 0):
 				fp = open(Output_Text_File, 'a')    
-				if (inp_no == 1):
-					fp.write('\n ==>>>>>>>>> NEW CONN --- NONCONFLICTING QUEUE')
-				else:
-					fp.write('\n ==>>>>>>>>> NEW CONN --- CONFLICTING QUEUE')
+				fp.write('\n ==>>>>>>>>> NEW CONN --- CONFLICTING QUEUE')
 				fp.write('-- relation type: ' + str(reln_type) \
 					+ '  from clust: ' + str(clust1) + ' to clust: ' + str(clust2) \
 						+ ' relation freq: ' + str(reln_freq) + ' conn score: ' + str(conn_score))
@@ -175,46 +168,7 @@ def Proc_Queue_Clust(Reachability_Graph_Mat, Output_Text_File, inp_no):
 			"""
 			also update the reachability graph information
 			"""
-			Reachability_Graph_Mat = AdjustReachGraph(Reachability_Graph_Mat, clust1, clust2, reln_type, Output_Text_File)
+			Reachability_Graph_Mat = AdjustReachGraph(Reachability_Graph_Mat, \
+				clust1, clust2, reln_type, Output_Text_File)
 		
-		else:
-
-			if (conflict_detection == 1):
-				clust_pair_key = (clust1, clust2)
-				Cluster_Pair_Info_Dict[clust_pair_key]._RemovePossibleReln(reln_type)
-				if (DEBUG_LEVEL > 0):
-					fp = open(Output_Text_File, 'a')    
-					fp.write('\n Conflict detection output: ' + str(conflict_detection) + '  removed possible relation: ' + str(reln_type))
-					fp.close()
-				
-				"""
-				this condition is enforced only if the relation is not at all applicable to the cluster pair
-				that's why we have checked whether the value of "conflict_detection" is 1, not 2
-				
-				then check whether there exists only one possible relation among this cluster pair and 
-				that relation is R4
-				if the R4 relation is non-conflicting then apply the relation between this pair of cluster
-				"""
-				allowed_reln_list = Cluster_Pair_Info_Dict[clust_pair_key]._GetPossibleRelnList()
-				
-				if (reln_type != RELATION_R4):
-					if ((len(allowed_reln_list) == 1) and (RELATION_R4 in allowed_reln_list)) or (len(allowed_reln_list) == 0):
-						if (Possible_Conflict_Curr_Reln(clust1, clust2, Reachability_Graph_Mat, RELATION_R4, Output_Text_File) == 0):
-							if (DEBUG_LEVEL > 0):
-								fp = open(Output_Text_File, 'a') 
-								fp.write('\n Only one allowed relation is remaining  and that is the relation R4 - it is non-conflicting as well')
-								if (inp_no == 1):
-									fp.write('\n ==>>>>>>>>> NEW CONN --- NONCONFLICTING QUEUE')
-								else:
-									fp.write('\n ==>>>>>>>>> NEW CONN --- CONFLICTING QUEUE')
-								fp.write('-- relation type: ' + str(RELATION_R4) \
-									+ '  from clust: ' + str(clust1) + ' to clust: ' + str(clust2) \
-										+ ' relation freq: ' + str(Cluster_Pair_Info_Dict[clust_pair_key]._GetFreq(RELATION_R4)) \
-											+ ' conn score: ' + str(Cluster_Pair_Info_Dict[clust_pair_key]._GetSupportScore(RELATION_R4)))
-								fp.close()
-							"""
-							also update the reachability graph information
-							"""
-							Reachability_Graph_Mat = AdjustReachGraph(Reachability_Graph_Mat, clust1, clust2, RELATION_R4, Output_Text_File)
-						
 	return Reachability_Graph_Mat

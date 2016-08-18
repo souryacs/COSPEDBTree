@@ -7,38 +7,10 @@ from UtilFunc import *
 
 #----------------------------------------------------------------
 """
-this function checks the cluster pairs having at least one of the relations R1 or R2 as their allowed relation
-and forms a queue of support scores using those relations
-"""
-def Form_Conflict_Support_Score_Queue():
-	for cx in Cluster_Pair_Info_Dict:
-		cx_allowed_reln_list = Cluster_Pair_Info_Dict[cx]._GetPossibleRelnList()
-		if RELATION_R1 in cx_allowed_reln_list:
-			subl = [cx[0], cx[1], RELATION_R1, Cluster_Pair_Info_Dict[cx]._GetFreq(RELATION_R1), \
-				Cluster_Pair_Info_Dict[cx]._GetSupportScore(RELATION_R1)]
-			Queue_Score_Cluster_Pair.append(subl)
-			
-		if RELATION_R2 in cx_allowed_reln_list:
-			subl = [cx[0], cx[1], RELATION_R2, Cluster_Pair_Info_Dict[cx]._GetFreq(RELATION_R2), \
-				Cluster_Pair_Info_Dict[cx]._GetSupportScore(RELATION_R2)]
-			Queue_Score_Cluster_Pair.append(subl)
-			
-		# modify - sourya
-		# here we add relation R4 only if it is the only relation allowed between this cluster pair
-		if (RELATION_R4 in cx_allowed_reln_list):	# and (len(cx_allowed_reln_list) > 1):
-			if 1:	#(RELATION_R1 not in cx_allowed_reln_list) and (RELATION_R2 not in cx_allowed_reln_list):
-				subl = [cx[0], cx[1], RELATION_R4, Cluster_Pair_Info_Dict[cx]._GetFreq(RELATION_R4), \
-					Cluster_Pair_Info_Dict[cx]._GetSupportScore(RELATION_R4)]
-				Queue_Score_Cluster_Pair.append(subl)
-		
-	return
-
-#----------------------------------------------------------------
-"""
 this function fills the support score values for individual cluster pairs
 also accumulates the frequency values for individual relations (except the relation R3)
 """
-def Initialize_Cluster_Pair(outfile):
+def Form_Support_Score_Queue_Cluster_Pair(outfile):
 	
 	no_of_clusters = len(CURRENT_CLUST_IDX_LIST)
 	
@@ -48,12 +20,32 @@ def Initialize_Cluster_Pair(outfile):
 		for j in range(i+1, no_of_clusters):
 			clust2 = CURRENT_CLUST_IDX_LIST[j]
 			taxa_list2 = Cluster_Info_Dict[clust2]._GetSpeciesList()
+			
+			"""
+			compute frequency of individual relations for this cluster pair
+			"""
 			R1_freq, R2_freq, R3_freq, R4_freq = GetFreqScore_ClusterPair(taxa_list1, taxa_list2)
+			
+			"""
+			priority of individual relations
+			"""
+			R1_priority = R1_freq + R3_freq - R2_freq - R4_freq
+			R2_priority = R2_freq + R3_freq - R1_freq - R4_freq
+			R4_priority = R4_freq - R1_freq - R2_freq
+			
+			"""
+			support score of individual relations
+			"""
+			R1_score = R1_freq + R1_priority
+			R2_score = R2_freq + R2_priority
+			R4_score = R4_freq + R4_priority
 			
 			if (DEBUG_LEVEL > 2):
 				fp = open(outfile, 'a')
-				fp.write('\n **** Examine cluster pair ' + str(clust1) + ' and ' + str(clust2) + ' R1_freq: ' + str(R1_freq) + \
-					' R2_freq: ' + str(R2_freq) + ' R3_freq: ' + str(R3_freq) + ' R4_freq: ' + str(R4_freq))
+				fp.write('\n **** Examine cluster pair ' + str(clust1) \
+					+ ' and ' + str(clust2) + ' R1_freq: ' + str(R1_freq) + \
+					' R2_freq: ' + str(R2_freq) + ' R3_freq: ' \
+						+ str(R3_freq) + ' R4_freq: ' + str(R4_freq))
 				fp.close()
 			
 			"""
@@ -62,14 +54,6 @@ def Initialize_Cluster_Pair(outfile):
 			"""
 			support_tree_count = R1_freq + R2_freq + R3_freq + R4_freq
 			if (support_tree_count > 0):
-			
-				"""
-				initialize the cluster pair key and corresponding relation instance
-				"""
-				clust_pair_key = (clust1, clust2)
-				if clust_pair_key not in Cluster_Pair_Info_Dict:
-					Cluster_Pair_Info_Dict.setdefault(clust_pair_key, Cluster_Pair(R1_freq, R2_freq, R3_freq, R4_freq))
-				
 				"""
 				frequency of the consensus relation
 				"""
@@ -79,26 +63,21 @@ def Initialize_Cluster_Pair(outfile):
 				add R4 relation if it has positive frequency
 				"""
 				if (R4_freq > 0):
-					if 1:	#(R4_freq == max_freq) or (R4_freq >= (PERCENT_MAX_FREQ1 * max_freq)):
-						Cluster_Pair_Info_Dict[clust_pair_key]._AddPossibleReln(RELATION_R4)
-				
-				"""
-				add R1 or R2 relations only if they are either consensus 
-				or having a significant frequency compared to the consensus relation
-				Note: We maintain two different allowed relation list
-				1) _AddAllPossibleRelnList function inserts any significant relation
-				2) _AddPossibleReln inserts R1 / R2 relation only if it has greater frequency than corresponding R2 / R1 relation
-				"""
+					subl = [clust1, clust2, RELATION_R4, R4_freq, R4_score]
+					Queue_Score_Cluster_Pair.append(subl)
+					
 				if (R1_freq > 0):
 					if ((R1_freq >= PERCENT_MAX_FREQ1 * max_freq) or ((R1_freq + R3_freq) >= (PERCENT_MAX_FREQ2 * max_freq))):
 						if (R1_freq >= R2_freq):
-							Cluster_Pair_Info_Dict[clust_pair_key]._AddPossibleReln(RELATION_R1)
+							subl = [clust1, clust2, RELATION_R1, R1_freq, R1_score]
+							Queue_Score_Cluster_Pair.append(subl)
 				
 				if (R2_freq > 0):
-					if ((R2_freq >= PERCENT_MAX_FREQ1 * max_freq) or ((R2_freq + R3_freq) >= (PERCENT_MAX_FREQ1 * max_freq))):
+					if ((R2_freq >= PERCENT_MAX_FREQ1 * max_freq) or ((R2_freq + R3_freq) >= (PERCENT_MAX_FREQ2 * max_freq))):
 						if (R2_freq >= R1_freq):
-							Cluster_Pair_Info_Dict[clust_pair_key]._AddPossibleReln(RELATION_R2)
-				
+							subl = [clust1, clust2, RELATION_R2, R2_freq, R2_score]
+							Queue_Score_Cluster_Pair.append(subl)
+
 	return
 
 #----------------------------------------------------------------
@@ -114,8 +93,14 @@ def Fill_Support_Score_Queues_Couplet_Based():
 	for individual relations between a couplet, corresponding edge between the cluster pair is established
 	"""  
 	for l in TaxaPair_Reln_Dict:
-		#r1_freq = TaxaPair_Reln_Dict[l]._GetEdgeWeight(RELATION_R1)
-		#r2_freq = TaxaPair_Reln_Dict[l]._GetEdgeWeight(RELATION_R2)
+		# add - sourya
+		"""
+		here we clear the list of taxa indices underlying the LCA nodes for this couplet
+		for all the input trees
+		"""
+		TaxaPair_Reln_Dict[l]._ResetLCAUndList()
+		# end add - sourya
+		
 		r3_freq = TaxaPair_Reln_Dict[l]._GetEdgeWeight(RELATION_R3)
 		r4_freq = TaxaPair_Reln_Dict[l]._GetEdgeWeight(RELATION_R4)
 		
@@ -146,13 +131,13 @@ def Fill_Support_Score_Queues_Couplet_Based():
 					"""
 					TaxaPair_Reln_Dict[l]._AddAllowedReln(reln_type)
 				elif (reln_type == RELATION_R1) or (reln_type == RELATION_R2):
-					if (r4_freq == 0) or (curr_reln_freq >= (0.7 * max_freq)):	# or (curr_reln_freq == max_freq_nonR3):
-					#if (curr_reln_freq >= (0.7 * max_freq)) or (curr_reln_freq == max_freq_nonR3):
+					if (r4_freq == 0) or (curr_reln_freq >= (PERCENT_MAX_FREQ2 * max_freq)):
 						"""
 						either zero frequency of R4 relation, or sufficient frequency of R1/R2 relations are considered
 						for their inclusion in the 
 						"""
 						TaxaPair_Reln_Dict[l]._AddAllowedReln(reln_type)
+						
 				else:	#if (reln_type == RELATION_R3):
 					if (len(TaxaPair_Reln_Dict[l]._GetAllowedRelnList()) <= 1) \
 						and (TaxaPair_Reln_Dict[l]._CheckTargetRelnConsensus(reln_type) == True):
@@ -222,12 +207,11 @@ def Higher_Score_Value(inp_queue, i, j):
 	key1 = (inp_queue[i][0], inp_queue[i][1])
 	reln1 = inp_queue[i][2]
 	freq1 = inp_queue[i][3]
+	score1 = inp_queue[i][4]
 
 	key2 = (inp_queue[j][0], inp_queue[j][1])
 	reln2 = inp_queue[j][2]
 	freq2 = inp_queue[j][3]
-
-	score1 = inp_queue[i][4]
 	score2 = inp_queue[j][4]
 
 	"""

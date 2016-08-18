@@ -7,9 +7,8 @@ import time
 import os
 from cStringIO import StringIO
 from optparse import OptionParser
-import copy
-import networkx as nx
-#import matplotlib.pyplot as plt
+#import copy
+#import networkx as nx
 
 """
 following variables denote different relations between a couplet
@@ -30,7 +29,6 @@ RELATION_R2 = 2
 for a couplet (x,y), R4(x,y) means x and y have independent evolution
 """
 RELATION_R4 = 3
-UNDEFINED_RELATION = 4
 
 """
 Two types of NJ methods are explored:
@@ -46,11 +44,6 @@ this is a dictionary for storing information about individual taxa clusters
 each cluster is basically a collection of taxa related via relation r3
 """
 Cluster_Info_Dict = dict()
-
-"""
-this is a dictionary containing information of a pair of taxa clusters
-"""
-Cluster_Pair_Info_Dict = dict()
 
 """ 
 the dictionary defines one particular taxa and its associated information
@@ -80,12 +73,6 @@ Queue_Score_R3_MajCons = []
 queue storing relations of individual cluster pairs
 """
 Queue_Score_Cluster_Pair = []
-
-"""
-queue storing relations of individual cluster pairs 
-only when one type of relation is allowed between them
-"""
-Queue_Score_Cluster_Pair_NonConflict = []
 
 #--------------------------------------------------
 """ 
@@ -164,10 +151,6 @@ class Reln_TaxaPair(object):
 		"""
 		self.freq_count = [0] * 4    
 		""" 
-		For this couplet, it stores the extra gene count with respect to all the gene trees
-		"""
-		self.XL_sum_gene_trees = []
-		""" 
 		this variable stores the no of trees supporting the taxa pair 
 		"""
 		self.supporting_trees = 0
@@ -185,6 +168,11 @@ class Reln_TaxaPair(object):
 		allowed relation list which are included in the support score queue
 		"""
 		self.Allowed_Reln_List = []
+	
+	#----------------------------------
+	def _ResetLCAUndList(self):
+		self.LCA_Underlying_Taxa_List[:] = []
+		self.LCA_Underlying_Taxa_List = []
 	
 	#----------------------------------
 	def _AddAllowedReln(self, inp_reln):
@@ -216,10 +204,6 @@ class Reln_TaxaPair(object):
 	Note: we store the index of individual taxon, with respect to the COMPLETE_INPUT_TAXA_LIST
 	"""
 	def _AppendUnderlyingTaxonList(self, inp_list):
-		# comment - sourya
-		#inp_taxa_list_index = [COMPLETE_INPUT_TAXA_LIST.index(x) for x in inp_list]
-		#self.LCA_Underlying_Taxa_List = list(set(self.LCA_Underlying_Taxa_List) | set(inp_taxa_list_index))
-		# add - sourya
 		self.LCA_Underlying_Taxa_List = list(set(self.LCA_Underlying_Taxa_List) | set(inp_list))
 
 	"""
@@ -242,26 +226,6 @@ class Reln_TaxaPair(object):
 	def _GetNoSupportTrees(self):
 		return self.supporting_trees
 	
-	#----------------------------------
-	"""
-	this function adds one XL value, computed for a particular input tree
-	to the list of XL values for this couplet
-	"""
-	def _AddXLVal(self, val):
-		self.XL_sum_gene_trees.append(val)
-	
-	def _GetXLList(self):
-		return self.XL_sum_gene_trees
-	
-	def _GetXLSumGeneTrees(self):
-		return sum(self.XL_sum_gene_trees)
-		
-	"""
-	this function computes the average of XL measures
-	"""
-	def _GetAvgXLGeneTrees(self):
-		return (sum(self.XL_sum_gene_trees) * 1.0) / self.supporting_trees
-
 	#----------------------------------
 	"""
 	this function returns the frequency of the consensus relation
@@ -335,12 +299,9 @@ class Reln_TaxaPair(object):
 		fp.write('\n relations [type/count]: ')
 		for i in range(4):
 			fp.write('\t [' + str(i) + '/' + str(self.freq_count[i]) + ']')
-		fp.write('\n AVERAGE Sum of excess gene **** : ' + str(self._GetAvgXLGeneTrees()))
 		fp.write('\n No of supporting trees : ' + str(self.supporting_trees))
 		fp.write('\n Average sum of internode count : ' + str(self._GetAvgSumLevel()))    
 		fp.write('\n Allowed reln list: ' + str(self.Allowed_Reln_List))
-		if (WEIGHT_TAXA_SUBSET == True):
-			fp.write('\n Underlying taxa indices list: ' + str(self.LCA_Underlying_Taxa_List))
 		fp.close()
 
 #-----------------------------------------------------
@@ -411,14 +372,12 @@ class Cluster_node(object):
 	returns the number of clusters cy such that cy->curr_clust connection is present
 	"""
 	def _Get_Indegree(self):
-		#return len(self.in_edge_list)
 		return len(self.Reln_List[RELATION_R2])
 
 	"""
 	returns the number of clusters cy such that curr_clust->cy connection is present
 	"""
 	def _Get_Outdegree(self):
-		#return len(self.out_edge_list)
 		return len(self.Reln_List[RELATION_R1])
 	
 	"""
@@ -452,95 +411,4 @@ class Cluster_node(object):
 			fp.write('\n in edge list (R2): ' + str(self.Reln_List[RELATION_R2]))
 		fp.close()
 
-#-----------------------------------------------------
-""" 
-this class is representative of a pair of taxa clusters
-"""
-class Cluster_Pair(object):
-	def __init__(self, R1_freq, R2_freq, R3_freq, R4_freq):
-		"""
-		frequencies of individual relations
-		"""
-		self.freq_count = [0] * 4
-		"""
-		priorities of individual relations
-		"""
-		self.priority_measure = [0] * 4
-		"""
-		support scores of individual relations
-		"""
-		self.support_score_measure = [0] * 4
-		"""
-		set of relations that can exist between this pair of clusters
-		in the created DAG
-		"""
-		self.possible_reln_list = []
-		"""
-		initialize the frequencies and the pseudo R4 relation frequencies for this pair of cluster
-		"""
-		self._InitRelnFreq(R1_freq, R2_freq, R3_freq, R4_freq)
-		"""
-		initialize the priority and support score measures for individual relations
-		"""
-		self._ComputePriority()
-		self._ComputeSupportScore()
-	
-	#-----------------------------------------------------------
-	def _ComputePriority(self):
-		self.priority_measure[RELATION_R1] = self.freq_count[RELATION_R1] + self.freq_count[RELATION_R3] \
-			- self.freq_count[RELATION_R2] - self.freq_count[RELATION_R4]
-		self.priority_measure[RELATION_R2] = self.freq_count[RELATION_R2] + self.freq_count[RELATION_R3] \
-			- self.freq_count[RELATION_R1] - self.freq_count[RELATION_R4]
-		self.priority_measure[RELATION_R4] = self.freq_count[RELATION_R4] \
-			- self.freq_count[RELATION_R1] - self.freq_count[RELATION_R2]
-		self.priority_measure[RELATION_R3] = self.freq_count[RELATION_R3] - self.freq_count[RELATION_R1] \
-			- self.freq_count[RELATION_R2] - self.freq_count[RELATION_R4]
-	
-	def _ComputeSupportScore(self):
-		for r in range(4):
-			# modify - sourya
-			#self.support_score_measure[r] = self.freq_count[r] * self.priority_measure[r]
-			self.support_score_measure[r] = self.freq_count[r] + self.priority_measure[r]
-	
-	def _GetPriority(self, inp_reln):
-		return self.priority_measure[inp_reln]
-	
-	def _GetSupportScore(self, inp_reln):
-		return self.support_score_measure[inp_reln]
-	
-	def _InitRelnFreq(self, R1_freq, R2_freq, R3_freq, R4_freq):
-		self.freq_count[RELATION_R1] = R1_freq
-		self.freq_count[RELATION_R2] = R2_freq
-		self.freq_count[RELATION_R3] = R3_freq
-		self.freq_count[RELATION_R4] = R4_freq
-	
-	def _AddPossibleReln(self, inp_reln):
-		if inp_reln not in self.possible_reln_list:
-			self.possible_reln_list.append(inp_reln)
-	
-	def _GetPossibleRelnList(self):
-		return self.possible_reln_list
-	
-	def _RemovePossibleReln(self, inp_reln):
-		if inp_reln in self.possible_reln_list:
-			self.possible_reln_list.remove(inp_reln)
-	
-	def _GetFreq(self, inp_reln):
-		return self.freq_count[inp_reln]
-		
-	def _PrintClusterPairInfo(self, key, outfile):
-		fp = open(outfile, 'a')    
-		fp.write('\n\n *** cluster pair key: ' + str(key[0]) + ',' + str(key[1]))
-		fp.write('\n relations [freq]: ')
-		fp.write('\n [' + ' R1 ' + '/' + str(self.freq_count[RELATION_R1]) + \
-			' R2 ' + '/' + str(self.freq_count[RELATION_R2]) + ' R3 ' + '/' + str(self.freq_count[RELATION_R3]) + \
-				' R4 ' + '/' + str(self.freq_count[RELATION_R4]) + ']')
-		fp.write('\n support scores: ')
-		fp.write('\n [' + ' R1 ' + '/' + str(self.support_score_measure[RELATION_R1]) \
-			+ ' R2 ' + '/' + str(self.support_score_measure[RELATION_R2]) \
-			+ ' R3 ' + '/' + str(self.support_score_measure[RELATION_R3]) \
-				+ ' R4 ' + '/' + str(self.support_score_measure[RELATION_R4]) + ']')
-		fp.write('\n Allowed relation list: ' + str(self.possible_reln_list))
-		fp.close()
-		
 	

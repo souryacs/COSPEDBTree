@@ -3,7 +3,7 @@
 import Header
 from Header import *
 
-#--------------------------------------------------------
+##--------------------------------------------------------
 #"""
 #this function prints the tree in Newick format - old function
 #this was used in latest code - 13.06.2016
@@ -162,11 +162,10 @@ the relationship is either ancestor / descendant, or siblings, or no relationshi
 @parameters: 
 	wt_taxa_subset: If True, then the intersection between 
 									the und_tax_list and curr_tree_taxa is accounted
-	xl_val: excess gene count (normalized) between this couplet
 	lca_level: level of the LCA node of this couplet
 	curr_tree_taxa: set of taxa belonging to the current gene tree (indices of taxon)
 """
-def DefineLeafPairReln(xl_val, lca_level, node1, node2, reln_type, curr_tree_taxa, wt_taxa_subset):
+def DefineLeafPairReln(lca_level, node1, node2, reln_type, curr_tree_taxa, wt_taxa_subset):
 
 	"""
 	compute the levels of individual nodes
@@ -176,8 +175,11 @@ def DefineLeafPairReln(xl_val, lca_level, node1, node2, reln_type, curr_tree_tax
 
 	"""
 	using normalized internode count value
+	with respect to the list of taxa belonging under the LCA node for this couplet
+	for all the input trees supporting this couplet
 	"""
-	internode_count = (((node1_level - lca_level) + (node2_level - lca_level) - 1) * 1.0) / len(curr_tree_taxa)
+	# the expression is modified - sourya
+	internode_count = (((node1_level - lca_level) + (node2_level - lca_level) - 1) * 1.0)
 
 	"""
 	index of the node1 taxon with respect to COMPLETE_INPUT_TAXA_LIST
@@ -207,7 +209,6 @@ def DefineLeafPairReln(xl_val, lca_level, node1, node2, reln_type, curr_tree_tax
 
 	"""
 	THE VARIABLE "intersect_ratio" is used for the weighted frequency value
-	sourya - change the variable value for explore
 	"""
 	if (wt_taxa_subset == True):
 		und_tax_list = TaxaPair_Reln_Dict[target_key]._GetUnderlyingTaxonList()
@@ -217,9 +218,8 @@ def DefineLeafPairReln(xl_val, lca_level, node1, node2, reln_type, curr_tree_tax
 		intersect_ratio = 1	#(len(curr_tree_taxa) * 1.0) / len(COMPLETE_INPUT_TAXA_LIST)
 
 	TaxaPair_Reln_Dict[target_key]._AddSupportingTree()
-	TaxaPair_Reln_Dict[target_key]._AddXLVal(xl_val / intersect_ratio)
 	TaxaPair_Reln_Dict[target_key]._AddEdgeCount(target_reln_type, intersect_ratio)
-	TaxaPair_Reln_Dict[target_key]._AddLevel(internode_count)
+	TaxaPair_Reln_Dict[target_key]._AddLevel(internode_count / intersect_ratio)	# the expression is modified - sourya
 
 	return
 
@@ -246,18 +246,6 @@ def DeriveCoupletRelations(Curr_tree, WEIGHT_TAXA_SUBSET):
 		"""
 		curr_node_level = curr_node.level()
 		"""
-		compute the excess gene count value associated with this node    
-		"""
-		if (WEIGHT_TAXA_SUBSET == True):
-			xl_val = (len(curr_node.leaf_nodes()) - 2)
-		else:
-			"""
-			normalized value of excess gene count 
-			with respect to the number of taxa of the current tree
-			"""
-			xl_val = ((len(curr_node.leaf_nodes()) - 2) * 1.0) / no_of_taxa
-		
-		"""
 		list the leaf and internal children of the current node
 		"""
 		curr_node_child_leaf_nodes = []
@@ -274,8 +262,7 @@ def DeriveCoupletRelations(Curr_tree, WEIGHT_TAXA_SUBSET):
 		if (len(curr_node_child_leaf_nodes) > 1):
 			for i in range(len(curr_node_child_leaf_nodes) - 1):
 				for j in range(i+1, len(curr_node_child_leaf_nodes)):
-					DefineLeafPairReln(xl_val, curr_node_level, \
-						curr_node_child_leaf_nodes[i], curr_node_child_leaf_nodes[j], \
+					DefineLeafPairReln(curr_node_level, curr_node_child_leaf_nodes[i], curr_node_child_leaf_nodes[j], \
 						RELATION_R3, curr_tree_taxa, WEIGHT_TAXA_SUBSET)
 		
 		"""
@@ -286,8 +273,7 @@ def DeriveCoupletRelations(Curr_tree, WEIGHT_TAXA_SUBSET):
 			for p in curr_node_child_leaf_nodes:
 				for q in curr_node_child_internal_nodes:
 					for r in q.leaf_nodes():
-						DefineLeafPairReln(xl_val, curr_node_level, p, r, RELATION_R1, \
-							curr_tree_taxa, WEIGHT_TAXA_SUBSET)
+						DefineLeafPairReln(curr_node_level, p, r, RELATION_R1, curr_tree_taxa, WEIGHT_TAXA_SUBSET)
 		
 		"""
 		finally a pair of leaf nodes which are descendant 
@@ -298,8 +284,7 @@ def DeriveCoupletRelations(Curr_tree, WEIGHT_TAXA_SUBSET):
 				for p in curr_node_child_internal_nodes[i].leaf_nodes():
 					for j in range(i+1, len(curr_node_child_internal_nodes)):
 						for q in curr_node_child_internal_nodes[j].leaf_nodes():
-							DefineLeafPairReln(xl_val, curr_node_level, p, q, RELATION_R4, \
-								curr_tree_taxa, WEIGHT_TAXA_SUBSET)
+							DefineLeafPairReln(curr_node_level, p, q, RELATION_R4, curr_tree_taxa, WEIGHT_TAXA_SUBSET)
 
 #--------------------------------------------------------
 """
@@ -389,6 +374,7 @@ def FindCoupletUnderlyingTaxon(Curr_tree):
 					for j in range(i+1, len(curr_node_child_internal_nodes)):
 						for q in curr_node_child_internal_nodes[j].leaf_nodes():
 							AppendUnderlyingTaxa(p, q, taxa_under_curr_node)
+	
 	return
 
 ##--------------------------------------------------------
@@ -481,11 +467,7 @@ used for binary refinement of the supertree
 @param: 
 1) taxa_clust1: first taxa list
 2) taxa_clust2: second taxa list
-3) DIST_MAT_TYPE: Type of distance employed
-		1) mean of XL measure
-		2) mean of internode count measure
-		3) mean of R1 relation frequency
-4) single_elem: can contain one of possible three values
+3) single_elem: can contain one of possible three values
 		0: only one element of taxa_clust1 and one element of taxa_clust2 will be compared
 		1: cluster containing taxa_clust1[0] and cluster containing taxa_clust2[0] will be compared
 		2: All pairs of elements of taxa_clust1 and taxa_clust2 will be compared
@@ -495,7 +477,7 @@ used for binary refinement of the supertree
 2) 1 / 0 depending on whether the cluster pair is supported by at least one tree
 
 """
-def FindAvgDistanceMeasure(taxa_clust1, taxa_clust2, DIST_MAT_TYPE, single_elem=2, type_of_output=0):
+def FindAvgDistanceMeasure(taxa_clust1, taxa_clust2, single_elem=2, type_of_output=0):
 	"""
 	if single_elem = 0
 	we compare taxa_clust1[0] and taxa_clust2[0], in terms of the preorder level
@@ -541,12 +523,10 @@ def FindAvgDistanceMeasure(taxa_clust1, taxa_clust2, DIST_MAT_TYPE, single_elem=
 			else:
 				continue
 			if target_key in TaxaPair_Reln_Dict:
-				if (DIST_MAT_TYPE == 1):
-					val = TaxaPair_Reln_Dict[target_key]._GetAvgXLGeneTrees()
-				elif (DIST_MAT_TYPE == 2):
-					val = TaxaPair_Reln_Dict[target_key]._GetAvgSumLevel()
-				elif (DIST_MAT_TYPE == 3):
-					val = TaxaPair_Reln_Dict[target_key]._GetEdgeWeight(RELATION_R1)
+				"""
+				we use the average internode count distance as the measure
+				"""
+				val = TaxaPair_Reln_Dict[target_key]._GetAvgSumLevel()
 				"""
 				append the value in the list
 				"""
@@ -560,7 +540,10 @@ def FindAvgDistanceMeasure(taxa_clust1, taxa_clust2, DIST_MAT_TYPE, single_elem=
 			return max(curr_taxa_pair_list)
 			#return min(curr_taxa_pair_list)
 	else:
-		return 0
+		# modified - sourya
+		# previously we have returned 0
+		# now we return a negative number to indicate that the cluster pair is not "supported" in the set of input trees
+		return -1
 
 #---------------------------------------------------------------------
 """
@@ -653,9 +636,11 @@ def FlEq(a, b, eps=0.000001):
 	return (abs(a - b) <= eps)
 
 #-----------------------------------------------------
-# this function finds the MRCA of this two input taxa labels
-# this is a custom function
-# without using standard dendropy routine
+"""
+this function finds the MRCA of this two input taxa labels
+this is a custom function
+without using standard dendropy routine
+"""
 def Find_MRCA(Inp_Tree, spec_list):
 	node1 = Inp_Tree.find_node_with_taxon_label(spec_list[0])
 	pn = node1.parent_node
@@ -668,7 +653,3 @@ def Find_MRCA(Inp_Tree, spec_list):
 		pn = pn.parent_node
 			
 	return None
-
-	
-	
-	
