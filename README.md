@@ -124,7 +124,10 @@ For any queries, please contact
 -------------------------------
 
 Sourya Bhattacharyya 
-Department of Computer Science and Engineering 
-Indian Institute of Technology Kharagpur 
+
+La Jolla Institute for Allergy and Immunology
+
+La Jolla, CA 92037, USA
+
 email: <sourya.bhatta@gmail.com>
 
